@@ -2,6 +2,8 @@
 // 대출 계산기 — 원리금균등/원금균등/만기일시 + 거치기간 + 월별 상환 스케줄(상각표).
 import Layout from '../../layouts/Layout.astro';
 import { breadcrumbSchema } from '../../lib/schema';
+import { SOURCE_META } from '../../data/rates';
+import SourceMeta from '../../components/SourceMeta.astro';
 
 const presets = [
   { label: '1,000만', v: 10000000 },
@@ -118,6 +120,8 @@ const jsonLd = [
       <p id="sch-more" class="mt-2 text-center text-xs text-gray-400"></p>
     </section>
 
+    <SourceMeta meta={SOURCE_META.loan} />
+
     <section class="reveal mt-8">
       <h2 class="mb-3 text-xl font-bold tracking-tight">자주 묻는 질문</h2>
       <div class="space-y-3">
@@ -125,7 +129,6 @@ const jsonLd = [
           <details class="rounded-xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-surface-900"><summary class="cursor-pointer font-semibold">{f.q}</summary><p class="mt-2 text-sm text-gray-600 dark:text-gray-400">{f.a}</p></details>
         ))}
       </div>
-      <p class="mt-4 text-xs text-gray-500">약정 이자(월 복리)만 계산합니다. 중도상환수수료·부대비용 제외, 원 단위 절사로 은행 전산과 소액 차이 가능. 실제 상환액은 대출 상품 안내서로 확인하세요.</p>
     </section>
   </div>
 

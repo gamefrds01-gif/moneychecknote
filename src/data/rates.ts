@@ -51,6 +51,7 @@ export const UNEMPLOYMENT = {
   dailyMax: 68100, // 1일 상한액
   dailyMin: 66048, // 1일 하한액(최저임금 10,320 × 8h × 80%)
   minWageHour: 10320, // 2026 최저임금 시급
+  payCycleDays: 28, // 실업인정 주기(4주=28일)마다 지급 — 통상 28일분
   // 소정급여일수: [가입기간 상한(년), 50세미만 일수, 50세이상/장애인 일수]
   durations: [
     [1, 120, 120],
@@ -60,5 +61,39 @@ export const UNEMPLOYMENT = {
     [Infinity, 240, 270],
   ] as [number, number, number][],
   asof: '2026-09-06',
-  source: 'https://www.easyzetec.com/blog/unemployment-benefit-conditions-amount-2026-self-diagnosis',
+};
+
+// 각 계산기의 근거·출처(공식 발행처 + 적용연도). 계산기 페이지에 그대로 노출.
+export const SOURCE_META: Record<string, { label: string; items: { name: string; org: string; url: string }[]; authority?: string }> = {
+  salary: {
+    label: '4대보험 요율·소득세 (2026년 적용 기준)',
+    items: [
+      { name: '국민연금 4.75%(2026 연금개혁 9.5%)', org: '국민연금공단', url: 'https://www.nps.or.kr' },
+      { name: '건강보험 3.595%·장기요양 건보료의 12.95%', org: '국민건강보험공단', url: 'https://www.nhis.or.kr' },
+      { name: '고용보험(실업급여) 0.9%', org: '고용노동부·근로복지공단', url: 'https://www.comwel.or.kr' },
+      { name: '근로소득세·지방소득세(소득세의 10%)', org: '국세청(소득세법)', url: 'https://www.nts.go.kr' },
+    ],
+  },
+  unemployment: {
+    label: '구직급여 상·하한·소정급여일수 (2026년 적용)',
+    items: [
+      { name: '1일 상한 68,100원·하한 66,048원', org: '고용노동부(2026년 적용 고시)', url: 'https://www.moel.go.kr' },
+      { name: '최저임금 시급 10,320원', org: '최저임금위원회·고용노동부(2026년)', url: 'https://www.minimumwage.go.kr' },
+      { name: '소정급여일수 120~270일', org: '고용보험법 시행령', url: 'https://www.ei.go.kr' },
+    ],
+    authority: '실업급여 신청·지급은 거주지 관할 고용센터(고용노동부) 담당이며, 정확한 수급액·인정은 고용보험 홈페이지 모의계산·고용센터 심사로 확정됩니다.',
+  },
+  loan: {
+    label: '표준 금융 상각식(별도 고시 없음)',
+    items: [
+      { name: '원리금균등: P·r·(1+r)ⁿ ÷ ((1+r)ⁿ−1) / 원금균등 / 만기일시', org: '금융권 표준 계산식', url: '' },
+    ],
+    authority: '은행 전산은 원 단위 절사·이자 계산 방식에 따라 소액 차이가 있을 수 있어, 실행 전 대출 상품 안내서 기준으로 확인하세요.',
+  },
+  severance: {
+    label: '평균임금 기준 퇴직금 (근로기준법)',
+    items: [
+      { name: '평균임금 산정(퇴직 전 3개월 임금 ÷ 91.25 × 30 × 재직일수/365)', org: '근로기준법 제2조·고용노동부', url: 'https://www.moel.go.kr' },
+    ],
+  },
 };

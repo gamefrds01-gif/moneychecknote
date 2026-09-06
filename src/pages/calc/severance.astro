@@ -2,6 +2,8 @@
 // 퇴직금 계산기 — 1일 평균임금 × 30 × (재직일수/365).
 import Layout from '../../layouts/Layout.astro';
 import { breadcrumbSchema } from '../../lib/schema';
+import { SOURCE_META } from '../../data/rates';
+import SourceMeta from '../../components/SourceMeta.astro';
 
 const faqs = [
   { q: '평균임금은 어떻게 정하나요?', a: '퇴직 전 3개월 동안 받은 임금 총액을 그 기간의 총일수로 나눈 것이 1일 평균임금입니다. 이 계산기는 최근 3개월 월평균 급여를 입력받아 1일 평균임금을 추정합니다. 상여·연차수당 등이 있으면 3개월 급여에 반영해 넣으세요.' },
@@ -55,6 +57,8 @@ const jsonLd = [
       </div>
       <p class="mt-4 text-xs text-gray-500">계산식: 1일 평균임금(3개월 급여 ÷ 91.25일) × 30 × (재직일수 ÷ 365). 추정값이며 실제는 평균임금 산정 기준에 따라 달라집니다.</p>
     </section>
+
+    <SourceMeta meta={SOURCE_META.severance} />
   </div>
 
   <script is:inline>

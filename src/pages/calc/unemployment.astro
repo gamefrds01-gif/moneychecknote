@@ -1,8 +1,9 @@
 ---
 // 실업급여(구직급여) 계산기 2026 — 1일 지급액(평균임금 60%, 상·하한) × 소정급여일수.
 import Layout from '../../layouts/Layout.astro';
-import { UNEMPLOYMENT } from '../../data/rates';
+import { UNEMPLOYMENT, SOURCE_META } from '../../data/rates';
 import { breadcrumbSchema } from '../../lib/schema';
+import SourceMeta from '../../components/SourceMeta.astro';
 
 const client = { UNEMPLOYMENT };
 
@@ -10,6 +11,7 @@ const faqs = [
   { q: '실업급여는 아무나 받나요?', a: '고용보험 가입 기간이 이직 전 18개월 중 180일 이상이고, 자발적 퇴사가 아닌 비자발적 사유(계약만료·권고사직 등)로 실직해 적극적으로 재취업 활동을 해야 받을 수 있습니다. 자발적 퇴사는 원칙적으로 제외됩니다.' },
   { q: '1일 지급액은 어떻게 정해지나요?', a: `이직 전 3개월 평균임금의 60%입니다. 단 2026년 기준 1일 상한 ${UNEMPLOYMENT.dailyMax.toLocaleString('ko-KR')}원, 하한 ${UNEMPLOYMENT.dailyMin.toLocaleString('ko-KR')}원(최저임금 시급 ${UNEMPLOYMENT.minWageHour.toLocaleString('ko-KR')}원 × 8시간 × 80%)이 적용됩니다.` },
   { q: '며칠 동안 받나요?', a: '고용보험 가입기간과 나이(이직일 기준 50세 미만/이상·장애인)에 따라 120일에서 270일까지 소정급여일수가 정해집니다. 위 계산기에서 자동으로 반영됩니다.' },
+  { q: '한 번에 얼마씩 들어오나요? (28일)', a: '구직급여는 4주(28일) 단위의 실업인정마다 지급됩니다. 실업인정을 받으면 그 기간(통상 28일분)이 계좌로 들어옵니다. 위 계산기에 28일분 지급액과 총 지급 횟수를 표시해 뒀습니다. 다만 신청 후 7일은 대기기간(무급)이라 1차 지급은 일수가 더 적을 수 있습니다.' },
 ];
 
 const jsonLd = [
@@ -31,6 +33,16 @@ const jsonLd = [
       <p class="text-xs font-semibold uppercase tracking-wider text-accent-700 dark:text-accent-300">예상 총 수급액</p>
       <p class="mt-1"><span id="total" class="tnum text-4xl font-extrabold sm:text-5xl">0</span> <span class="text-xl font-bold text-gray-500">원</span></p>
       <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">1일 <span id="daily" class="tnum font-semibold">0</span> 원 <span id="rule" class="ml-1 inline-block rounded-full bg-accent-100 px-2 py-0.5 text-xs font-semibold text-accent-700 dark:bg-accent-500/20 dark:text-accent-300">평균임금 60%</span> × <span id="ndays" class="font-semibold">0</span>일 (약 <span id="months" class="font-semibold">0</span>개월)</p>
+      <div class="mt-3 grid grid-cols-2 gap-3 border-t border-accent-200/60 pt-3 dark:border-white/10">
+        <div>
+          <p class="text-xs text-gray-500">28일분 (실업인정 주기 1회)</p>
+          <p class="tnum text-xl font-extrabold sm:text-2xl"><span id="pay28">0</span> <span class="text-sm font-bold text-gray-500">원</span></p>
+        </div>
+        <div>
+          <p class="text-xs text-gray-500">총 지급 횟수 (28일 기준)</p>
+          <p class="tnum text-xl font-extrabold sm:text-2xl"><span id="cycles">0</span> <span class="text-sm font-bold text-gray-500">회</span></p>
+        </div>
+      </div>
       <p class="mt-3 flex flex-wrap gap-x-4 gap-y-1 border-t border-accent-200/60 pt-3 text-xs text-gray-500 dark:border-white/10">
         <span>1일 <strong>상한 {UNEMPLOYMENT.dailyMax.toLocaleString('ko-KR')}원</strong> <span class="text-gray-400">(2025년 66,000원→2026 인상)</span></span>
         <span>1일 <strong>하한 {UNEMPLOYMENT.dailyMin.toLocaleString('ko-KR')}원</strong> <span class="text-gray-400">= 최저시급 {UNEMPLOYMENT.minWageHour.toLocaleString('ko-KR')}원 × 80% × 8h</span></span>
@@ -57,6 +69,8 @@ const jsonLd = [
         </div>
       </div>
     </section>
+
+    <SourceMeta meta={SOURCE_META.unemployment} asof={UNEMPLOYMENT.asof} />
 
     <section class="reveal mt-8">
       <h2 class="mb-3 text-xl font-bold tracking-tight">자주 묻는 질문</h2>
@@ -94,6 +108,9 @@ const jsonLd = [
         $('ndays').textContent = n.toLocaleString('ko-KR');
         $('months').textContent = (n / 30).toFixed(1);
         $('total').textContent = won(total);
+        var cyc = U.payCycleDays || 28;
+        $('pay28').textContent = won(daily * cyc);
+        $('cycles').textContent = Math.ceil(n / cyc).toLocaleString('ko-KR');
       }
       $('avg').addEventListener('input', function () { fmtField($('avg')); calc(); });
       ['yy', 'age'].forEach(function (id) { $(id).addEventListener('input', calc); });

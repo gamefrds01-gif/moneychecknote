@@ -1,10 +1,32 @@
 ---
 // 연봉 실수령액 계산기 — 플래그십. 2026 요율 실측 + 트렌디 UX(슬라이더·프리셋·카운트업·공제 시각화).
 import Layout from '../../layouts/Layout.astro';
-import { INSURANCE, INCOME_TAX_BRACKETS, EARNED_INCOME_DEDUCTION, TAX_META, RATES_ASOF } from '../../data/rates';
+import { INSURANCE, INCOME_TAX_BRACKETS, EARNED_INCOME_DEDUCTION, TAX_META, RATES_ASOF, SOURCE_META } from '../../data/rates';
 import { breadcrumbSchema } from '../../lib/schema';
+import SourceMeta from '../../components/SourceMeta.astro';
 
 const client = { INSURANCE, INCOME_TAX_BRACKETS, EARNED_INCOME_DEDUCTION };
+
+// 연봉 구간별 실수령액 빠른표 — 빌드 시 서버에서 동일 로직으로 계산(부양1·월 비과세 20만 기준)
+function earnedDeductionSSR(g: number) { for (let i = 0; i < EARNED_INCOME_DEDUCTION.length; i++) { if (g <= EARNED_INCOME_DEDUCTION[i][0]) { const b = i === 0 ? 0 : EARNED_INCOME_DEDUCTION[i - 1][0]; return EARNED_INCOME_DEDUCTION[i][2] + (g - b) * EARNED_INCOME_DEDUCTION[i][1]; } } return g; }
+function progressiveTaxSSR(t: number) { for (let i = 0; i < INCOME_TAX_BRACKETS.length; i++) { if (t <= INCOME_TAX_BRACKETS[i][0]) return t * INCOME_TAX_BRACKETS[i][1] - INCOME_TAX_BRACKETS[i][2]; } return 0; }
+function wageTaxCreditSSR(c: number, g: number) { const cr = c <= 1300000 ? c * 0.55 : 715000 + (c - 1300000) * 0.30; let l; if (g <= 33000000) l = 740000; else if (g <= 70000000) l = Math.max(660000, 740000 - (g - 33000000) * 0.008); else if (g <= 120000000) l = Math.max(500000, 660000 - (g - 70000000) * 0.5); else l = Math.max(200000, 500000 - (g - 120000000) * 0.5); return Math.min(cr, l); }
+function netMonthly(annualGross: number, nonTax = 200000, family = 1) {
+  const mGross = annualGross / 12, mTax = Math.max(0, mGross - nonTax);
+  const pensionBase = Math.min(Math.max(mTax, INSURANCE.pensionBaseMin), INSURANCE.pensionBaseMax);
+  const pension = pensionBase * INSURANCE.pension, health = mTax * INSURANCE.health, care = health * INSURANCE.longTermCareOfHealth, emp = mTax * INSURANCE.employment;
+  const annualTaxable = mTax * 12, earnedInc = annualTaxable - earnedDeductionSSR(annualTaxable);
+  const taxBase = Math.max(0, earnedInc - family * 1500000);
+  const calcTax = Math.max(0, progressiveTaxSSR(taxBase));
+  const decided = Math.max(0, calcTax - wageTaxCreditSSR(calcTax, annualTaxable));
+  const income = decided / 12, local = income * 0.10;
+  const ded = pension + health + care + emp + income + local;
+  return { net: Math.max(0, mGross - ded), ded };
+}
+const won = (n: number) => Math.round(n).toLocaleString('ko-KR');
+const quickRows = [2400, 3000, 3600, 4000, 4500, 5000, 6000, 7000, 8000, 10000, 12000, 15000].map((man) => {
+  const r = netMonthly(man * 10000); return { man, net: r.net, ded: r.ded, rate: (r.ded / (man * 10000 / 12) * 100) };
+});
 
 const faqs = [
   { q: '실수령액이 매달 조금씩 다른 이유는 뭔가요?', a: '회사는 매달 근로소득 간이세액표로 소득세를 원천징수하는데, 이 계산기는 연말정산 기준으로 추정합니다. 그래서 월 원천징수액과는 몇 천 원 단위로 차이가 날 수 있고, 최종 금액은 연말정산에서 정산됩니다.' },
@@ -151,13 +173,45 @@ const jsonLd = [
       </div>
     </section>
 
+    <!-- 연봉 구간별 실수령액 빠른표 -->
+    <section class="reveal mt-5 overflow-hidden rounded-3xl border border-gray-200 bg-white dark:border-white/10 dark:bg-surface-900">
+      <div class="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-5 py-3 dark:border-white/10 dark:bg-surface-800">
+        <h2 class="text-base font-bold">연봉별 실수령액 빠른표 <span class="text-xs font-normal text-gray-500">(2026 · 부양 1인·월 비과세 20만 기준)</span></h2>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full min-w-[420px] text-right text-sm tnum">
+          <thead>
+            <tr class="border-b border-gray-200 text-xs text-gray-500 dark:border-white/10">
+              <th class="py-2.5 pl-5 text-left font-semibold">연봉</th>
+              <th class="py-2.5 pr-2 font-semibold">월 실수령액</th>
+              <th class="py-2.5 pr-2 font-semibold">월 공제액</th>
+              <th class="py-2.5 pr-5 font-semibold">공제율</th>
+            </tr>
+          </thead>
+          <tbody>
+            {quickRows.map((r) => (
+              <tr class="border-b border-gray-100 dark:border-white/5">
+                <td class="py-2 pl-5 text-left font-semibold">{r.man.toLocaleString('ko-KR')}만원</td>
+                <td class="py-2 pr-2 font-bold text-accent-700 dark:text-accent-300">{won(r.net)}</td>
+                <td class="py-2 pr-2 text-gray-500">{won(r.ded)}</td>
+                <td class="py-2 pr-5 text-gray-500">{r.rate.toFixed(1)}%</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p class="px-5 py-3 text-xs text-gray-500">부양가족·비과세액에 따라 달라집니다. 정확한 내 금액은 위 계산기에 직접 입력하세요. 단위: 원.</p>
+    </section>
+
     <!-- 계산 근거 -->
     <section class="reveal mt-6 rounded-2xl border border-gray-200 bg-gray-50 p-5 text-sm text-gray-600 dark:border-white/10 dark:bg-surface-900 dark:text-gray-400">
       <h2 class="mb-2 text-base font-bold text-gray-900 dark:text-gray-100">계산 근거 ({RATES_ASOF} 기준)</h2>
       <p>4대보험은 월 과세소득(급여−비과세)에 근로자 부담 요율을 적용합니다: 국민연금 4.75%(2026년 9.5%로 인상, 근로자 절반), 건강보험 3.595%, 장기요양 건강보험료의 12.95%, 고용보험 0.9%. 국민연금은 기준소득월액 상·하한이 적용됩니다. {INSURANCE.note}</p>
       <p class="mt-2">{TAX_META.note}</p>
-      <p class="mt-2 text-xs text-gray-500">요율 출처: 확인일 {RATES_ASOF} · <a class="underline" href={INSURANCE.sources[0]} target="_blank" rel="noopener nofollow">참고1</a> · <a class="underline" href={INSURANCE.sources[1]} target="_blank" rel="noopener nofollow">참고2</a>. 장기요양·연금 상하한은 고시에 따라 변동하니 정확한 신고는 공식 계산기로 확인하세요.</p>
+      <p class="mt-2 text-xs text-gray-500">장기요양·국민연금 기준소득월액 상·하한은 고시에 따라 매년 변동하니, 정확한 신고는 공식 계산기로 확인하세요.</p>
     </section>
+
+    <SourceMeta meta={SOURCE_META.salary} asof={RATES_ASOF} />
 
     <section class="reveal mt-8">
       <h2 class="mb-3 text-xl font-bold tracking-tight">자주 묻는 질문</h2>

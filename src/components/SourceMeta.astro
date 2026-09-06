@@ -1,0 +1,29 @@
+---
+// 계산기 근거·출처 카드 — 공식 발행처 + 적용연도 + 확인일 표시(원본성·신뢰).
+import { RATES_ASOF, type SOURCE_META } from '../data/rates';
+type Meta = (typeof SOURCE_META)[string];
+interface Props { meta: Meta; asof?: string; }
+const { meta, asof = RATES_ASOF } = Astro.props as Props;
+---
+<section class="reveal mt-6 rounded-2xl border border-gray-200 bg-gray-50 p-5 text-sm dark:border-white/10 dark:bg-surface-900">
+  <div class="mb-2 flex items-center gap-2">
+    <svg class="h-4 w-4 text-accent-600 dark:text-accent-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+    <h2 class="text-base font-bold text-gray-900 dark:text-gray-100">근거·출처</h2>
+    <span class="ml-auto rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-gray-500 dark:bg-surface-800">확인일 {asof}</span>
+  </div>
+  <p class="mb-3 text-xs font-semibold text-accent-700 dark:text-accent-300">{meta.label}</p>
+  <ul class="space-y-1.5">
+    {meta.items.map((it) => (
+      <li class="flex flex-wrap items-baseline gap-x-2 text-gray-600 dark:text-gray-400">
+        <span class="text-gray-800 dark:text-gray-200">{it.name}</span>
+        <span class="text-gray-400">·</span>
+        {it.url ? (
+          <a href={it.url} target="_blank" rel="noopener nofollow" class="font-semibold text-accent-600 underline decoration-dotted underline-offset-2 dark:text-accent-400">{it.org} ↗</a>
+        ) : (
+          <span class="font-semibold text-gray-700 dark:text-gray-300">{it.org}</span>
+        )}
+      </li>
+    ))}
+  </ul>
+  {meta.authority && <p class="mt-3 border-t border-gray-200 pt-2 text-xs text-gray-500 dark:border-white/10">{meta.authority}</p>}
+</section>
