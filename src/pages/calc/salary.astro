@@ -83,7 +83,7 @@ const jsonLd = [
           <label for="salary" class="text-sm font-semibold">세전 연봉</label>
           <span class="text-xs text-gray-500"><span id="salary-man" class="tnum font-semibold text-accent-700 dark:text-accent-300">4,000</span> 만원</span>
         </div>
-        <input id="salary" type="number" min="0" step="1000000" value="40000000" inputmode="numeric" class="mb-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-lg tnum dark:border-white/15 dark:bg-surface-800" />
+        <input id="salary" type="text" inputmode="numeric" autocomplete="off" value="40,000,000" class="mb-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-lg tnum dark:border-white/15 dark:bg-surface-800" />
         <input id="salary-range" type="range" class="rng" min="20000000" max="150000000" step="1000000" value="40000000" aria-label="연봉 슬라이더" />
         <div class="mt-1 flex justify-between text-[11px] text-gray-400"><span>2,000만</span><span>1.5억</span></div>
       </div>
@@ -91,7 +91,7 @@ const jsonLd = [
       <div class="grid gap-4 sm:grid-cols-3">
         <div>
           <label for="nontax" class="mb-1 block text-sm font-semibold">월 비과세액 (원)</label>
-          <input id="nontax" type="number" min="0" step="10000" value="200000" inputmode="numeric" class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 tnum dark:border-white/15 dark:bg-surface-800" />
+          <input id="nontax" type="text" inputmode="numeric" autocomplete="off" value="200,000" class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 tnum dark:border-white/15 dark:bg-surface-800" />
           <p class="mt-1 text-xs text-gray-500">식대 등. 기본 20만</p>
         </div>
         <div>
@@ -161,6 +161,9 @@ const jsonLd = [
       var INS = client.INSURANCE, BR = client.INCOME_TAX_BRACKETS, ED = client.EARNED_INCOME_DEDUCTION;
       var $ = function (id) { return document.getElementById(id); };
       var fmt = function (n) { return Math.round(n).toLocaleString('ko-KR'); };
+      var digits = function (v) { return parseInt(String(v).replace(/[^0-9]/g, ''), 10) || 0; };
+      // 입력칸에 3자리 콤마 자동 적용(커서는 끝으로)
+      function formatField(el) { var d = digits(el.value); el.value = d ? d.toLocaleString('ko-KR') : ''; }
 
       function earnedDeduction(g){for(var i=0;i<ED.length;i++){if(g<=ED[i][0]){var b=i===0?0:ED[i-1][0];return ED[i][2]+(g-b)*ED[i][1];}}return g;}
       function progressiveTax(t){for(var i=0;i<BR.length;i++){if(t<=BR[i][0])return t*BR[i][1]-BR[i][2];}return 0;}
@@ -177,9 +180,9 @@ const jsonLd = [
       var last = {};
       function calc(animate) {
         var isMonthly = $('ismonthly').checked;
-        var raw = parseFloat($('salary').value) || 0;
+        var raw = digits($('salary').value);
         var annualGross = isMonthly ? raw * 12 : raw;
-        var nonTax = parseFloat($('nontax').value) || 0;
+        var nonTax = digits($('nontax').value);
         var family = Math.max(1, parseInt($('family').value) || 1);
         var mGross = annualGross / 12;
         var mTax = Math.max(0, mGross - nonTax);
@@ -218,16 +221,16 @@ const jsonLd = [
         try { if (window.gtag) window.gtag('event', 'salary_calc'); } catch (e) {}
       }
 
-      // 입력 ↔ 슬라이더 동기화
+      // 입력 ↔ 슬라이더 동기화 (콤마 포맷 포함)
       var salary = $('salary'), range = $('salary-range');
-      salary.addEventListener('input', function () { var v = parseFloat(salary.value) || 0; if (!$('ismonthly').checked) range.value = Math.min(150000000, Math.max(20000000, v)); calc(true); });
-      range.addEventListener('input', function () { salary.value = range.value; $('ismonthly').checked = false; calc(true); });
-      $('nontax').addEventListener('input', function(){ calc(true); });
+      salary.addEventListener('input', function () { formatField(salary); var v = digits(salary.value); if (!$('ismonthly').checked) range.value = Math.min(150000000, Math.max(20000000, v)); calc(true); });
+      range.addEventListener('input', function () { salary.value = Number(range.value).toLocaleString('ko-KR'); $('ismonthly').checked = false; calc(true); });
+      $('nontax').addEventListener('input', function(){ formatField($('nontax')); calc(true); });
       $('family').addEventListener('input', function(){ calc(true); });
       $('ismonthly').addEventListener('change', function(){ calc(true); });
       $('fam-minus').addEventListener('click', function(){ $('family').value = Math.max(1,(parseInt($('family').value)||1)-1); calc(true); });
       $('fam-plus').addEventListener('click', function(){ $('family').value = (parseInt($('family').value)||1)+1; calc(true); });
-      document.querySelectorAll('.preset').forEach(function(b){ b.addEventListener('click', function(){ salary.value = b.dataset.v; range.value = b.dataset.v; $('ismonthly').checked=false; calc(true); }); });
+      document.querySelectorAll('.preset').forEach(function(b){ b.addEventListener('click', function(){ salary.value = Number(b.dataset.v).toLocaleString('ko-KR'); range.value = b.dataset.v; $('ismonthly').checked=false; calc(true); }); });
 
       calc(false);
     })();
