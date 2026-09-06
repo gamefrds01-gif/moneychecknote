@@ -1,5 +1,4 @@
 ---
-import { ClientRouter } from 'astro:transitions';
 import '../styles/global.css';
 import { SITE_TITLE, SITE_DESCRIPTION, CATEGORY_GROUPS } from '../consts';
 import { websiteSchema, organizationSchema } from '../lib/schema';
@@ -79,7 +78,6 @@ const ADSENSE_ACCOUNT = import.meta.env.PUBLIC_ADSENSE_ID || 'ca-pub-94405895496
       <script type="application/ld+json" is:inline set:html={JSON.stringify(s)} />
     ))}
 
-    <ClientRouter />
 
     <!-- 테마 적용: FOUC 방지 위해 head에서 즉시 실행. 기본 = 라이트(첫 방문 화이트), 선택은 쿠키로 기억 -->
     <script is:inline>
