@@ -1,5 +1,5 @@
 ---
-import { CATEGORY_COLORS } from '../consts';
+import { CATEGORY_COLORS, CATEGORIES } from '../consts';
 import type { CollectionEntry } from 'astro:content';
 
 interface Props {
@@ -14,13 +14,10 @@ const baseSlug = lang === 'ko' ? post.id : parts.slice(1).join('/');
 const href = lang === 'ko' ? `/posts/${baseSlug}/` : `/${lang}/posts/${baseSlug}/`;
 
 const GRADIENTS: Record<string, string> = {
-  'ai-tools': 'from-cyan-600 via-sky-800 to-surface-950',
-  'new-tech': 'from-violet-600 via-fuchsia-900 to-surface-950',
-  'bigtech-news': 'from-emerald-600 via-teal-900 to-surface-950',
-  'guide': 'from-amber-600 via-orange-900 to-surface-950',
-  'life-info': 'from-rose-600 via-pink-900 to-surface-950',
-  'idea': 'from-lime-600 via-green-900 to-surface-950',
-  'hot-issue': 'from-red-600 via-orange-900 to-surface-950',
+  'gov-support': 'from-emerald-600 via-teal-900 to-surface-950',
+  'refund': 'from-cyan-600 via-sky-900 to-surface-950',
+  'tax': 'from-rose-600 via-pink-900 to-surface-950',
+  'money-guide': 'from-amber-600 via-orange-900 to-surface-950',
 };
 const CAT: Record<string, Record<string, string>> = {
   ko: { 'ai-tools': 'AI툴', 'new-tech': '신기술', 'bigtech-news': '빅테크뉴스', 'guide': '가이드', 'life-info': '생활정보', 'idea': '아이디어', 'hot-issue': '핫이슈' },
@@ -33,7 +30,7 @@ const READ: Record<string, string> = { ko: '읽기 →', en: 'Read →', ja: '�
 const { title, description, pubDate, category, ogImage, hook } = post.data;
 const hookText = hook ?? description.split('. ')[0].slice(0, 60);
 const dateStr = pubDate.toLocaleDateString(LOCALE[lang], { year: 'numeric', month: 'long', day: 'numeric' });
-const catLabel = CAT[lang][category] ?? category;
+const catLabel = CATEGORIES[category] ?? category;
 ---
 
 <article

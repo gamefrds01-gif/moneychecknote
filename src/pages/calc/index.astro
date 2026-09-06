@@ -3,24 +3,16 @@ import Layout from '../../layouts/Layout.astro';
 import { breadcrumbSchema } from '../../lib/schema';
 
 const calculators = [
-  { href: '/calc/salary/', name: '연봉 실수령액 계산기', desc: '2026 4대보험·소득세 반영 세후 월급 계산', live: true },
-  { name: '퇴직금 계산기', desc: '평균임금 기준 예상 퇴직금', live: false },
-  { name: '대출 원리금 계산기', desc: '원리금균등·원금균등 월 상환액', live: false },
-  { name: '실업급여 계산기', desc: '구직급여 예상 수급액·기간', live: false },
-  { name: '국민연금 예상수령액', desc: '가입기간·소득 기준 예상 연금', live: false },
+  { href: '/calc/salary/', name: '연봉 실수령액 계산기', desc: '2026 4대보험·소득세 반영 세후 월급', live: true },
+  { href: '/calc/loan/', name: '대출 원리금 계산기', desc: '원리금균등·원금균등 월 상환액·총이자', live: true },
+  { href: '/calc/severance/', name: '퇴직금 계산기', desc: '평균임금 기준 예상 퇴직금', live: true },
+  { href: '/calc/unemployment/', name: '실업급여 계산기', desc: '2026 구직급여 예상 수급액·일수', live: true },
 ];
 
-const jsonLd = breadcrumbSchema([
-  { name: '홈', url: '/' },
-  { name: '계산기', url: '/calc/' },
-]);
+const jsonLd = breadcrumbSchema([{ name: '홈', url: '/' }, { name: '계산기', url: '/calc/' }]);
 ---
 
-<Layout
-  title="돈 계산기 모음 — 연봉 실수령액·퇴직금·대출·실업급여"
-  description="연봉 실수령액, 퇴직금, 대출 원리금, 실업급여, 국민연금 예상수령액을 한 곳에서 계산하세요. 2026 최신 요율·세율 기준."
-  jsonLd={jsonLd}
->
+<Layout title="돈 계산기 모음 — 연봉 실수령액·퇴직금·대출·실업급여" description="연봉 실수령액, 대출 원리금, 퇴직금, 실업급여를 한 곳에서 계산하세요. 2026 최신 요율·세율 기준, 계산 근거와 확인일 공개." jsonLd={jsonLd}>
   <div class="mx-auto max-w-4xl">
     <header class="reveal mb-8">
       <h1 class="text-3xl font-extrabold tracking-tight sm:text-4xl">돈 계산기</h1>
@@ -28,18 +20,12 @@ const jsonLd = breadcrumbSchema([
     </header>
     <div class="grid gap-4 sm:grid-cols-2">
       {calculators.map((c) => (
-        c.live ? (
-          <a href={c.href} class="reveal block rounded-2xl border border-gray-200 bg-white p-5 transition-colors hover:border-accent-500 dark:border-white/10 dark:bg-surface-900">
-            <h2 class="text-lg font-bold">{c.name}</h2>
-            <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">{c.desc}</p>
-          </a>
-        ) : (
-          <div class="reveal block rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-5 dark:border-white/10 dark:bg-surface-900/50">
-            <h2 class="text-lg font-bold text-gray-500">{c.name} <span class="ml-1 rounded-full bg-gray-200 px-2 py-0.5 text-xs font-normal text-gray-600 dark:bg-white/10 dark:text-gray-400">준비 중</span></h2>
-            <p class="mt-1 text-sm text-gray-400">{c.desc}</p>
-          </div>
-        )
+        <a href={c.href} class="reveal block rounded-2xl border border-gray-200 bg-white p-5 transition-colors hover:border-accent-500 dark:border-white/10 dark:bg-surface-900">
+          <h2 class="text-lg font-bold">{c.name}</h2>
+          <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">{c.desc}</p>
+        </a>
       ))}
     </div>
+    <p class="reveal mt-6 text-sm text-gray-500">국민연금 예상수령액은 가입이력이 필요해 <a href="/posts/2026-09-06-국민연금-예상수령액-조회/" class="underline">공식 조회 방법 안내</a>로 대신합니다.</p>
   </div>
 </Layout>

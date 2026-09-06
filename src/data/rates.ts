@@ -44,3 +44,21 @@ export const TAX_META = {
   asof: RATES_ASOF,
   note: '소득세는 연말정산 기준 추정(간이세액표 원천징수와 월별로 다를 수 있음). 인적공제·비과세만 반영한 간이 계산이며 실제 결정세액은 각종 공제·감면에 따라 달라집니다.',
 };
+
+// 실업급여(구직급여) 2026 — 상·하한, 소정급여일수, 최저임금
+export const UNEMPLOYMENT = {
+  rate: 0.6, // 평균임금의 60%
+  dailyMax: 68100, // 1일 상한액
+  dailyMin: 66048, // 1일 하한액(최저임금 10,320 × 8h × 80%)
+  minWageHour: 10320, // 2026 최저임금 시급
+  // 소정급여일수: [가입기간 상한(년), 50세미만 일수, 50세이상/장애인 일수]
+  durations: [
+    [1, 120, 120],
+    [3, 150, 180],
+    [5, 180, 210],
+    [10, 210, 240],
+    [Infinity, 240, 270],
+  ] as [number, number, number][],
+  asof: '2026-09-06',
+  source: 'https://www.easyzetec.com/blog/unemployment-benefit-conditions-amount-2026-self-diagnosis',
+};
