@@ -110,28 +110,44 @@ const jsonLd = [
       </div>
     </section>
 
-    <!-- 공제 내역 -->
-    <section class="reveal mt-5 rounded-3xl border border-gray-200 bg-white p-5 dark:border-white/10 dark:bg-surface-900 sm:p-6">
-      <h2 class="mb-3 text-base font-bold">공제 내역 (월)</h2>
-      <div class="space-y-2.5">
-        {[
-          ['pension', '국민연금', '4.75%'],
-          ['health', '건강보험', '3.595%'],
-          ['care', '장기요양', '건보료의 12.95%'],
-          ['emp', '고용보험', '0.9%'],
-          ['income', '소득세', '추정'],
-          ['local', '지방소득세', '소득세의 10%'],
-        ].map(([id, name, rate]) => (
-          <div>
-            <div class="flex items-baseline justify-between text-sm">
-              <span>{name} <span class="text-xs text-gray-400">{rate}</span></span>
-              <span class="tnum font-semibold" id={`p-${id}`}>0</span>
-            </div>
-            <div class="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-white/5">
-              <div class="bar-fill h-full rounded-full bg-accent-400/70" id={`bar-${id}`} style="width:0%"></div>
-            </div>
-          </div>
-        ))}
+    <!-- 급여명세서 -->
+    <section class="reveal mt-5 overflow-hidden rounded-3xl border border-gray-200 bg-white dark:border-white/10 dark:bg-surface-900">
+      <div class="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-5 py-3 dark:border-white/10 dark:bg-surface-800">
+        <h2 class="text-base font-bold">급여명세서 <span class="text-xs font-normal text-gray-500">(월 기준 · 예상)</span></h2>
+        <span class="text-xs text-gray-400">단위: 원</span>
+      </div>
+      <div class="grid sm:grid-cols-2">
+        <!-- 지급 -->
+        <div class="border-b border-gray-200 p-5 dark:border-white/10 sm:border-b-0 sm:border-r">
+          <p class="mb-2 text-xs font-bold uppercase tracking-wider text-accent-700 dark:text-accent-300">지급 항목</p>
+          <dl class="space-y-2 text-sm">
+            <div class="flex justify-between"><dt class="text-gray-600 dark:text-gray-400">과세 급여</dt><dd class="tnum font-semibold" id="pay-taxable">0</dd></div>
+            <div class="flex justify-between"><dt class="text-gray-600 dark:text-gray-400">비과세 <span class="text-xs text-gray-400">(식대 등)</span></dt><dd class="tnum font-semibold" id="pay-nontax">0</dd></div>
+            <div class="mt-1 flex justify-between border-t border-gray-200 pt-2 dark:border-white/10"><dt class="font-bold">지급 합계</dt><dd class="tnum font-extrabold text-accent-700 dark:text-accent-300" id="pay-gross">0</dd></div>
+          </dl>
+        </div>
+        <!-- 공제 -->
+        <div class="p-5">
+          <p class="mb-2 text-xs font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400">공제 항목</p>
+          <dl class="space-y-2 text-sm">
+            {[
+              ['pension', '국민연금', '4.75%'],
+              ['health', '건강보험', '3.595%'],
+              ['care', '장기요양', '건보 12.95%'],
+              ['emp', '고용보험', '0.9%'],
+              ['income', '소득세', '추정'],
+              ['local', '지방소득세', '소득세 10%'],
+            ].map(([id, name, rate]) => (
+              <div class="flex justify-between"><dt class="text-gray-600 dark:text-gray-400">{name} <span class="text-xs text-gray-400">{rate}</span></dt><dd class="tnum font-semibold" id={`p-${id}`}>0</dd></div>
+            ))}
+            <div class="mt-1 flex justify-between border-t border-gray-200 pt-2 dark:border-white/10"><dt class="font-bold">공제 합계</dt><dd class="tnum font-extrabold text-rose-600 dark:text-rose-400" id="pay-ded">0</dd></div>
+          </dl>
+        </div>
+      </div>
+      <!-- 차인지급액 -->
+      <div class="flex items-baseline justify-between border-t-2 border-gray-900 bg-gray-50 px-5 py-4 dark:border-white/40 dark:bg-surface-800">
+        <span class="text-sm font-bold">실지급액 <span class="text-xs font-normal text-gray-500">(차인지급액)</span></span>
+        <span><span id="pay-net" class="tnum text-2xl font-extrabold sm:text-3xl">0</span> <span class="text-sm font-bold text-gray-500">원</span></span>
       </div>
     </section>
 
@@ -210,11 +226,15 @@ const jsonLd = [
         $('lbl-ded').textContent = (100 - netPct).toFixed(0) + '%';
 
         var items = { pension: pension, health: health, care: care, emp: emp, income: income, local: local };
-        var maxItem = Math.max(pension, health, care, emp, income, local, 1);
         Object.keys(items).forEach(function (k) {
           $('p-' + k).textContent = fmt(items[k]);
-          $('bar-' + k).style.width = (items[k] / maxItem * 100) + '%';
         });
+        // 급여명세서 지급/공제
+        $('pay-taxable').textContent = fmt(mTax);
+        $('pay-nontax').textContent = fmt(nonTax);
+        $('pay-gross').textContent = fmt(mGross);
+        $('pay-ded').textContent = fmt(ded);
+        animateNum($('pay-net'), net);
         // 연봉 만원 표시 + 팝
         $('salary-man').textContent = fmt(annualGross / 10000);
         if (animate) { var c = $('net-monthly'); c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop'); }
