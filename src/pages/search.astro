@@ -1,0 +1,45 @@
+---
+// 검색 결과 페이지 — SearchAction 대상(/search/?q=)이자 모달의 폴백.
+// 검색 결과는 색인 대상이 아니므로 noindex,follow.
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="검색" description="Pointchecknote 검색" noindex={true}>
+  <div class="mx-auto max-w-2xl">
+    <h1 class="mb-6 text-2xl font-extrabold tracking-tight">검색</h1>
+    <div id="pagefind-search-page"></div>
+    <p id="search-page-fallback" class="hidden py-6 text-center text-sm text-gray-500">
+      검색을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.
+    </p>
+  </div>
+
+  <link rel="stylesheet" href="/pagefind/pagefind-ui.css" />
+  <script is:inline>
+    (() => {
+      const init = () => {
+        const el = document.getElementById('pagefind-search-page');
+        if (!el || el.dataset.bound) return;
+        el.dataset.bound = '1';
+        const q = new URLSearchParams(location.search).get('q') || '';
+        const s = document.createElement('script');
+        s.src = '/pagefind/pagefind-ui.js';
+        s.onload = () => {
+          new window.PagefindUI({
+            element: '#pagefind-search-page',
+            showSubResults: true,
+            showImages: false,
+            translations: { placeholder: '검색어 입력…', zero_results: '"[SEARCH_TERM]" 결과 없음' },
+          });
+          if (q) {
+            const input = el.querySelector('input');
+            if (input) { input.value = q; input.dispatchEvent(new Event('input', { bubbles: true })); }
+          }
+        };
+        s.onerror = () => document.getElementById('search-page-fallback').classList.remove('hidden');
+        document.head.appendChild(s);
+      };
+      init();
+      document.addEventListener('astro:page-load', init);
+    })();
+  </script>
+</Layout>

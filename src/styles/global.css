@@ -1,0 +1,102 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+/* 다크모드 = class 전략 (html.dark) */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Pretendard Variable (한글 가독성) */
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css");
+
+@theme {
+  --font-sans: "Pretendard Variable", Pretendard, -apple-system, "Segoe UI",
+    Roboto, "Noto Sans KR", sans-serif;
+  --color-accent-50: #ecfeff;
+  --color-accent-300: #67e8f9;
+  --color-accent-400: #22d3ee;
+  --color-accent-500: #06b6d4;
+  --color-accent-100: #cffafe;
+  --color-accent-200: #a5f3fc;
+  --color-accent-600: #0891b2;
+  --color-accent-700: #0e7490;
+  --color-brand-500: #10b981;
+  --color-surface-950: #0a0a0a;
+  --color-surface-900: #111113;
+  --color-surface-800: #1a1a1e;
+}
+
+html {
+  font-family: var(--font-sans);
+  scroll-behavior: smooth;
+}
+
+/* ── 스크롤 리빌 (은은한 페이드인/업) ── */
+.reveal {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 0.55s ease, transform 0.55s ease;
+}
+.reveal.revealed {
+  opacity: 1;
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .reveal { opacity: 1; transform: none; transition: none; }
+}
+
+/* ── 코드블록 (shiki dual theme, class 다크모드 연동) ── */
+.astro-code {
+  border-radius: 0.75rem;
+  padding: 1rem 1.25rem;
+  font-size: 0.875rem;
+}
+.dark .astro-code,
+.dark .astro-code span {
+  color: var(--shiki-dark) !important;
+  background-color: var(--shiki-dark-bg) !important;
+  font-style: var(--shiki-dark-font-style) !important;
+  font-weight: var(--shiki-dark-font-weight) !important;
+}
+
+/* 본문 폭 — 읽기 편한 68ch 상한 */
+.prose { max-width: 68ch; }
+
+
+/* ── 숫자 표기(가독성): 표·결과 금액은 tabular-nums ── */
+.tnum { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+
+/* ── 결과 카운트업 강조(값 바뀔 때 살짝 팝) ── */
+.pop { animation: pop .35s ease; }
+@keyframes pop { 0%{transform:scale(1)} 40%{transform:scale(1.045)} 100%{transform:scale(1)} }
+
+/* ── 공제 시각화 막대(스르륵 차오름) ── */
+.bar-fill { transition: width .6s cubic-bezier(.22,1,.36,1); }
+
+/* ── 입력 레인지 슬라이더(모바일 다루기 쉽게, 트렌디) ── */
+input[type=range].rng {
+  -webkit-appearance:none; appearance:none; width:100%; height:6px; border-radius:9999px;
+  background:linear-gradient(90deg,var(--color-accent-500),var(--color-brand-500)); outline:none; cursor:pointer;
+}
+input[type=range].rng::-webkit-slider-thumb{
+  -webkit-appearance:none; width:22px; height:22px; border-radius:9999px; background:#fff;
+  border:2px solid var(--color-accent-600); box-shadow:0 2px 8px rgba(8,145,178,.35); cursor:pointer; transition:transform .1s;
+}
+input[type=range].rng::-webkit-slider-thumb:active{ transform:scale(1.15); }
+input[type=range].rng::-moz-range-thumb{
+  width:22px; height:22px; border-radius:9999px; background:#fff; border:2px solid var(--color-accent-600); box-shadow:0 2px 8px rgba(8,145,178,.35); cursor:pointer;
+}
+
+/* ── 히어로 오로라(은은한 배경 모션, reduce 시 정지) ── */
+.aurora{ position:relative; overflow:hidden; }
+.aurora::before{
+  content:""; position:absolute; inset:-40% -10% auto -10%; height:420px; z-index:-1;
+  background:radial-gradient(60% 60% at 30% 30%, rgba(34,211,238,.22), transparent 60%),
+             radial-gradient(50% 50% at 75% 20%, rgba(16,185,129,.20), transparent 60%);
+  filter:blur(20px); animation:float 14s ease-in-out infinite alternate;
+}
+@keyframes float{ from{transform:translate3d(0,0,0) scale(1)} to{transform:translate3d(0,18px,0) scale(1.06)} }
+@media (prefers-reduced-motion: reduce){ .aurora::before{ animation:none } .pop{ animation:none } }
+
+/* 칩(프리셋) */
+.chip{ transition:all .15s ease; }
+.chip:active{ transform:translateY(1px); }

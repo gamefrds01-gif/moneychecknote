@@ -1,0 +1,55 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { breadcrumbSchema } from '../lib/schema';
+const jsonLd = breadcrumbSchema([
+  { name: '홈', url: '/' },
+  { name: '문의', url: '/contact/' },
+]);
+// 이메일은 정적 HTML에 노출하지 않고 클라이언트 JS로 구성 → Cloudflare 난독화 회피 + 안정 표시 + 스크래퍼 방지.
+---
+
+<Layout
+  title="문의"
+  description="콘텐츠 오류 제보·정정 요청·제휴/광고 문의를 이메일로 보내주세요. 확인 후 회신드립니다."
+  jsonLd={jsonLd}
+>
+  <div class="prose prose-gray dark:prose-invert max-w-none">
+    <h1>문의</h1>
+    <p>
+      콘텐츠 오류 제보, 정정 요청, 제휴·광고 문의는 아래 이메일로 보내주세요.
+      확인 후 이메일로 회신드립니다. 관련 글 주소와 근거(공식 출처)를 함께 적어 주시면 더 빠르게 확인할 수 있습니다.
+    </p>
+  </div>
+
+  <div class="mx-auto mt-6 max-w-xl rounded-2xl border border-gray-200 bg-gray-50 p-6 dark:border-white/10 dark:bg-surface-900">
+    <p class="text-sm font-semibold uppercase tracking-wide text-gray-400">문의 이메일</p>
+    <a id="pcn-mail" href="#" class="mt-1 block break-all text-xl font-extrabold text-accent-600 hover:underline dark:text-accent-400" aria-label="문의 이메일 주소">이메일 주소 표시 중…</a>
+    <noscript>
+      <p class="mt-1 break-all text-xl font-extrabold text-accent-600 dark:text-accent-400">contact <span aria-hidden="true">[at]</span> pointchecknote <span aria-hidden="true">[dot]</span> com</p>
+    </noscript>
+    <ul class="mt-4 space-y-1.5 text-sm text-gray-600 dark:text-gray-400">
+      <li>· 콘텐츠 오류 제보 / 정정 요청</li>
+      <li>· 제휴 문의</li>
+      <li>· 광고 문의</li>
+      <li>· 개인정보 열람·정정·삭제 요청</li>
+      <li>· 기타 문의</li>
+    </ul>
+    <p class="mt-4 text-xs text-gray-400">
+      보내주신 이메일 주소와 문의 내용은 <a href="/privacy/" class="underline">개인정보처리방침</a>에 따라 문의 처리·회신 목적에만 이용됩니다.
+    </p>
+  </div>
+
+  <script is:inline>
+    (function () {
+      function setMail() {
+        var a = document.getElementById('pcn-mail');
+        if (!a) return;
+        var e = 'contact' + String.fromCharCode(64) + 'pointchecknote.com';
+        a.setAttribute('href', 'mailto:' + e);
+        a.textContent = e;
+      }
+      setMail();
+      document.addEventListener('astro:page-load', setMail);
+    })();
+  </script>
+</Layout>

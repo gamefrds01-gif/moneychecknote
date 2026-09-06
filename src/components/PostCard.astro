@@ -1,0 +1,62 @@
+---
+import { CATEGORY_COLORS } from '../consts';
+import type { CollectionEntry } from 'astro:content';
+
+interface Props {
+  post: CollectionEntry<'blog'>;
+}
+const { post } = Astro.props;
+
+// id 접두사로 언어·기본슬러그 판별: en/2026-... , ja/2026-... , 아니면 ko
+const parts = post.id.split('/');
+const lang = (parts.length > 1 && (parts[0] === 'en' || parts[0] === 'ja')) ? parts[0] : 'ko';
+const baseSlug = lang === 'ko' ? post.id : parts.slice(1).join('/');
+const href = lang === 'ko' ? `/posts/${baseSlug}/` : `/${lang}/posts/${baseSlug}/`;
+
+const GRADIENTS: Record<string, string> = {
+  'ai-tools': 'from-cyan-600 via-sky-800 to-surface-950',
+  'new-tech': 'from-violet-600 via-fuchsia-900 to-surface-950',
+  'bigtech-news': 'from-emerald-600 via-teal-900 to-surface-950',
+  'guide': 'from-amber-600 via-orange-900 to-surface-950',
+  'life-info': 'from-rose-600 via-pink-900 to-surface-950',
+  'idea': 'from-lime-600 via-green-900 to-surface-950',
+  'hot-issue': 'from-red-600 via-orange-900 to-surface-950',
+};
+const CAT: Record<string, Record<string, string>> = {
+  ko: { 'ai-tools': 'AI툴', 'new-tech': '신기술', 'bigtech-news': '빅테크뉴스', 'guide': '가이드', 'life-info': '생활정보', 'idea': '아이디어', 'hot-issue': '핫이슈' },
+  en: { 'ai-tools': 'AI Tools', 'new-tech': 'New Tech', 'bigtech-news': 'Big Tech', 'guide': 'Guide', 'life-info': 'Life', 'idea': 'Idea', 'hot-issue': 'Hot' },
+  ja: { 'ai-tools': 'AIツール', 'new-tech': '新技術', 'bigtech-news': 'ビッグテック', 'guide': 'ガイド', 'life-info': '生活情報', 'idea': 'アイデア', 'hot-issue': 'ホット' },
+};
+const LOCALE: Record<string, string> = { ko: 'ko-KR', en: 'en-US', ja: 'ja-JP' };
+const READ: Record<string, string> = { ko: '읽기 →', en: 'Read →', ja: '読む →' };
+
+const { title, description, pubDate, category, ogImage, hook } = post.data;
+const hookText = hook ?? description.split('. ')[0].slice(0, 60);
+const dateStr = pubDate.toLocaleDateString(LOCALE[lang], { year: 'numeric', month: 'long', day: 'numeric' });
+const catLabel = CAT[lang][category] ?? category;
+---
+
+<article
+  class="reveal group overflow-hidden rounded-2xl border border-gray-200/80 bg-white transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-gray-900/15 dark:border-white/10 dark:bg-surface-900 dark:hover:border-white/20 dark:hover:shadow-black/40"
+>
+  <a href={href} class="block">
+    <div class={`relative aspect-[16/9] overflow-hidden bg-gradient-to-br ${GRADIENTS[category]}`}>
+      {ogImage && (
+        <img src={ogImage} alt={title} loading="lazy"
+          class="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+      )}
+      <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/10"></div>
+      <span class={`absolute left-3.5 top-3.5 rounded-full px-2.5 py-1 text-xs font-bold text-white ${CATEGORY_COLORS[category]}`}>
+        {catLabel}
+      </span>
+      <div class="absolute inset-x-0 bottom-0 p-4">
+        <h2 class="line-clamp-2 text-lg font-extrabold leading-snug text-white drop-shadow">{title}</h2>
+        <p class="mt-1 line-clamp-1 text-xs font-medium text-white/80">{hookText}</p>
+      </div>
+    </div>
+    <div class="flex items-center justify-between px-4 py-3">
+      <time datetime={pubDate.toISOString()} class="text-xs text-gray-500">{dateStr}</time>
+      <span class="text-xs font-semibold text-accent-600 transition-transform duration-300 group-hover:translate-x-0.5 dark:text-accent-400">{READ[lang]}</span>
+    </div>
+  </a>
+</article>

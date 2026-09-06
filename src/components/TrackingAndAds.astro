@@ -1,0 +1,51 @@
+---
+const GA_ID = import.meta.env.PUBLIC_GA_ID ?? '';
+const ADSENSE_ID = import.meta.env.PUBLIC_ADSENSE_ID || 'ca-pub-9440589549659043';
+---
+
+<script is:inline define:vars={{ GA_ID, ADSENSE_ID }}>
+  (function () {
+    const host = location.hostname;
+    const params = new URLSearchParams(location.search);
+    const automated =
+      host === 'localhost' ||
+      host === '127.0.0.1' ||
+      navigator.webdriver === true ||
+      params.get('automation') === '1' ||
+      params.get('no_ads') === '1';
+
+    window.__PCN_AUTOMATION_VISIT__ = automated;
+    if (automated) {
+      document.documentElement.dataset.automationVisit = 'true';
+      return;
+    }
+
+    if (GA_ID) {
+      window.dataLayer = window.dataLayer || [];
+      window.gtag = function () { window.dataLayer.push(arguments); };
+      window.gtag('js', new Date());
+      window.gtag('config', GA_ID);
+
+      const ga = document.createElement('script');
+      ga.async = true;
+      ga.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(GA_ID)}`;
+      document.head.appendChild(ga);
+
+      document.addEventListener('astro:after-swap', function () {
+        window.gtag('event', 'page_view', {
+          page_path: location.pathname + location.search,
+          page_location: location.href,
+          page_title: document.title,
+        });
+      });
+    }
+
+    if (ADSENSE_ID) {
+      const ads = document.createElement('script');
+      ads.async = true;
+      ads.crossOrigin = 'anonymous';
+      ads.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(ADSENSE_ID)}`;
+      document.head.appendChild(ads);
+    }
+  })();
+</script>

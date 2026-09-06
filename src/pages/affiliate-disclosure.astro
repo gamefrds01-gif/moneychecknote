@@ -1,0 +1,31 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { breadcrumbSchema } from '../lib/schema';
+const jsonLd = breadcrumbSchema([
+  { name: '홈', url: '/' },
+  { name: '제휴 고지', url: '/affiliate-disclosure/' },
+]);
+---
+
+<Layout
+  title="제휴 고지"
+  description="Pointchecknote의 제휴·광고 링크 정책과 편집 독립성에 대한 안내입니다."
+  jsonLd={jsonLd}
+>
+  <div class="prose prose-gray dark:prose-invert">
+    <h1>제휴 고지</h1>
+    <p>
+      Pointchecknote는 앞으로 일부 글에 제휴(어필리에이트) 링크를 포함할 수 있습니다. 그럴 경우 다음 원칙을 지킵니다.
+    </p>
+    <ul>
+      <li>제휴 관계가 있는 링크는 <strong>명확히 표시</strong>합니다(예: “제휴 링크”).</li>
+      <li>제휴 여부는 <strong>글의 평가·비교·순위에 영향을 주지 않습니다.</strong> 제휴가 없는 서비스도 비교에서 제외하지 않습니다.</li>
+      <li>제휴 링크를 통해 구매해도 <strong>독자가 추가 비용을 부담하지 않습니다.</strong></li>
+      <li>제휴 링크에는 <code>rel="sponsored"</code>를 적용합니다.</li>
+    </ul>
+    <p>
+      현재 시점에는 특정 제품 판매를 목적으로 한 콘텐츠를 운영하지 않으며, 제휴가 도입되면 이 페이지에 대상과 정책을 갱신합니다.
+      광고·스폰서 관련 문의는 <a href="/advertise/">광고 문의</a>를 참고해 주세요.
+    </p>
+  </div>
+</Layout>

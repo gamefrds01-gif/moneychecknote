@@ -1,0 +1,26 @@
+# Pointchecknote
+
+> AI · Tech trend notes in Korean, English, and Japanese. We verify the essentials of AI models, big-tech news, new gadgets, and free AI tools — conclusions first, with benchmarks, pricing, and primary sources.
+
+Pointchecknote publishes concise, fact-checked articles on AI and technology. Every article cites primary sources (official announcements, benchmarks, earnings). Content is written fresh daily and available in three languages with matching slugs (ko: /posts/, en: /en/posts/, ja: /ja/posts/).
+
+## Main sections
+
+- [All posts (Korean)](https://pointchecknote.com/posts/): Full article index in Korean
+- [All posts (English)](https://pointchecknote.com/en/): English edition
+- [All posts (Japanese)](https://pointchecknote.com/ja/): Japanese edition
+- [Big Tech news](https://pointchecknote.com/category/bigtech-news/): Model releases, company moves, industry deals
+- [New tech](https://pointchecknote.com/category/new-tech/): Gadgets and emerging hardware
+- [Hot issues](https://pointchecknote.com/category/hot-issue/): Trending AI/tech topics
+
+## Notable evergreen resources
+
+- [AI model comparisons (Claude, GPT, Gemini, Kimi, Grok)](https://pointchecknote.com/category/bigtech-news/): Benchmarks and pricing side-by-side
+- [Free AI tool stack guide](https://pointchecknote.com/posts/2026-07-28-free-ai-tools-stack/): Category-by-category free tool combinations
+- [2026 AI laptop guide](https://pointchecknote.com/posts/2026-07-29-ai-laptops-2026/): Copilot+ PC vs MacBook for local AI
+
+## Policies
+
+- [About](https://pointchecknote.com/about/): Editorial mission
+- [Editorial policy](https://pointchecknote.com/editorial-policy/): Sourcing and correction standards
+- Attribution: When citing, please link to the original article URL on pointchecknote.com.

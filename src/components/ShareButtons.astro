@@ -1,0 +1,76 @@
+---
+// 공유 버튼: 카카오톡(SDK 키 있으면 SDK, 없으면 OS 공유시트 폴백) / X / 링크복사
+interface Props {
+  title: string;
+  url: string;
+}
+const { title, url } = Astro.props;
+const kakaoKey = import.meta.env.PUBLIC_KAKAO_JS_KEY ?? '';
+const xUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(url)}`;
+---
+
+<div class="flex flex-wrap items-center gap-2" data-share data-title={title} data-url={url} data-kakao-key={kakaoKey}>
+  <span class="mr-1 text-xs font-semibold uppercase tracking-wide text-gray-400">공유</span>
+  <button
+    type="button"
+    data-share-kakao
+    class="flex items-center gap-1.5 rounded-full bg-[#FEE500] px-3.5 py-1.5 text-xs font-bold text-[#191919] transition-transform hover:scale-105"
+  >💬 카카오톡</button>
+  <a
+    href={xUrl}
+    target="_blank"
+    rel="noopener"
+    class="flex items-center gap-1.5 rounded-full bg-gray-900 px-3.5 py-1.5 text-xs font-bold text-white transition-transform hover:scale-105 dark:bg-white/15"
+  >𝕏 포스트</a>
+  <button
+    type="button"
+    data-share-copy
+    class="flex items-center gap-1.5 rounded-full border border-gray-300 px-3.5 py-1.5 text-xs font-bold text-gray-700 transition-transform hover:scale-105 dark:border-white/20 dark:text-gray-300"
+  >🔗 링크복사</button>
+</div>
+
+<script is:inline>
+  (() => {
+    const initShare = () => {
+      document.querySelectorAll('[data-share]:not([data-bound])').forEach((box) => {
+        box.dataset.bound = '1';
+        const title = box.dataset.title;
+        const url = box.dataset.url;
+        const kakaoKey = box.dataset.kakaoKey;
+
+        box.querySelector('[data-share-copy]').addEventListener('click', async (e) => {
+          const btn = e.currentTarget;
+          try {
+            await navigator.clipboard.writeText(url);
+            const prev = btn.textContent;
+            btn.textContent = '✅ 복사됨';
+            setTimeout(() => { btn.textContent = prev; }, 1500);
+          } catch { prompt('아래 주소를 복사하세요', url); }
+        });
+
+        box.querySelector('[data-share-kakao]').addEventListener('click', async () => {
+          if (kakaoKey && window.Kakao) {
+            if (!window.Kakao.isInitialized()) window.Kakao.init(kakaoKey);
+            window.Kakao.Share.sendDefault({
+              objectType: 'feed',
+              content: { title, description: '', imageUrl: url.replace(/\/posts\/(.+)\/$/, '/og/$1.png'), link: { mobileWebUrl: url, webUrl: url } },
+            });
+          } else if (navigator.share) {
+            try { await navigator.share({ title, url }); } catch {}
+          } else {
+            try { await navigator.clipboard.writeText(url); alert('링크를 복사했습니다. 카카오톡에 붙여넣어 공유하세요.'); } catch {}
+          }
+        });
+
+        if (kakaoKey && !document.getElementById('kakao-sdk')) {
+          const s = document.createElement('script');
+          s.id = 'kakao-sdk';
+          s.src = 'https://t1.kakaocdn.net/kakao_js_sdk/2.7.4/kakao.min.js';
+          document.head.appendChild(s);
+        }
+      });
+    };
+    initShare();
+    document.addEventListener('astro:page-load', initShare);
+  })();
+</script>

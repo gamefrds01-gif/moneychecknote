@@ -1,0 +1,235 @@
+---
+// 연봉 실수령액 계산기 — 플래그십. 2026 요율 실측 + 트렌디 UX(슬라이더·프리셋·카운트업·공제 시각화).
+import Layout from '../../layouts/Layout.astro';
+import { INSURANCE, INCOME_TAX_BRACKETS, EARNED_INCOME_DEDUCTION, TAX_META, RATES_ASOF } from '../../data/rates';
+import { breadcrumbSchema } from '../../lib/schema';
+
+const client = { INSURANCE, INCOME_TAX_BRACKETS, EARNED_INCOME_DEDUCTION };
+
+const faqs = [
+  { q: '실수령액이 매달 조금씩 다른 이유는 뭔가요?', a: '회사는 매달 근로소득 간이세액표로 소득세를 원천징수하는데, 이 계산기는 연말정산 기준으로 추정합니다. 그래서 월 원천징수액과는 몇 천 원 단위로 차이가 날 수 있고, 최종 금액은 연말정산에서 정산됩니다.' },
+  { q: '2026년에 실수령액이 줄었다면 왜인가요?', a: '2026년 국민연금 요율이 9%에서 9.5%로 올라 근로자 부담이 4.5%에서 4.75%로 인상됐습니다. 월 과세소득 300만 원 기준 국민연금만 약 7,500원 더 빠집니다. 2033년까지 매년 0.5%p씩 올라 13%가 될 예정입니다.' },
+  { q: '비과세액은 무엇을 넣나요?', a: '식대(월 20만 원까지), 자가운전보조금, 출산·보육수당 등 비과세로 인정되는 급여의 합입니다. 4대보험료와 소득세 계산에서 모두 빠지므로 실수령액에 직접 영향을 줍니다. 기본값은 식대 20만 원입니다.' },
+  { q: '부양가족 수는 어떻게 세나요?', a: '본인을 포함해 기본공제 대상(소득요건을 충족하는 배우자·부모·자녀 등)의 수를 넣습니다. 1명당 연 150만 원의 인적공제가 적용돼 과세표준이 줄어듭니다.' },
+];
+
+const jsonLd = [
+  breadcrumbSchema([
+    { name: '홈', url: '/' },
+    { name: '계산기', url: '/calc/' },
+    { name: '연봉 실수령액 계산기', url: '/calc/salary/' },
+  ]),
+  { '@context': 'https://schema.org', '@type': 'WebApplication', name: '연봉 실수령액 계산기 2026', applicationCategory: 'FinanceApplication', operatingSystem: 'All', offers: { '@type': 'Offer', price: '0', priceCurrency: 'KRW' }, description: '2026년 4대보험 요율과 소득세를 반영해 연봉·월급의 세후 실수령액을 계산합니다.', url: 'https://money.pointchecknote.com/calc/salary/' },
+  { '@context': 'https://schema.org', '@type': 'HowTo', name: '연봉 실수령액 계산하는 법', step: [
+    { '@type': 'HowToStep', name: '연봉 입력', text: '세전 연봉(또는 월급)을 입력하거나 슬라이더로 조절합니다.' },
+    { '@type': 'HowToStep', name: '비과세·부양가족 입력', text: '월 비과세액과 부양가족 수를 입력합니다.' },
+    { '@type': 'HowToStep', name: '결과 확인', text: '4대보험·소득세를 뺀 월 실수령액과 공제 내역을 확인합니다.' },
+  ]},
+  { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: faqs.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })) },
+];
+---
+
+<Layout
+  title="연봉 실수령액 계산기 2026 — 세후 월급 즉시 계산"
+  description={`2026년 4대보험 요율(국민연금 4.75%·건강보험 3.595%·고용보험 0.9%)과 소득세를 반영해 연봉·월급 세후 실수령액을 계산합니다. 계산 근거와 확인일(${RATES_ASOF})을 함께 표시합니다.`}
+  jsonLd={jsonLd}
+>
+  <div class="mx-auto max-w-3xl">
+    <nav class="mb-4 text-sm text-gray-500" aria-label="위치">
+      <a href="/" class="hover:text-accent-600">홈</a> › <a href="/calc/" class="hover:text-accent-600">계산기</a> › <span class="text-gray-700 dark:text-gray-300">연봉 실수령액</span>
+    </nav>
+
+    <header class="reveal mb-6">
+      <h1 class="text-3xl font-extrabold tracking-tight sm:text-4xl">연봉 실수령액 계산기</h1>
+      <p class="mt-3 text-gray-600 dark:text-gray-400">세전 연봉을 넣으면 <strong>2026년 4대보험료·소득세를 뺀 월 실수령액</strong>을 실시간으로 계산합니다. 요율은 <strong>{RATES_ASOF}</strong> 기준, 계산 근거도 아래에 공개해요.</p>
+    </header>
+
+    <!-- 결과 (상단 고정 느낌, 카운트업) -->
+    <section class="reveal mb-5 overflow-hidden rounded-3xl border border-accent-200 bg-gradient-to-br from-accent-50 to-white p-6 shadow-sm dark:border-accent-500/30 dark:from-accent-500/10 dark:to-surface-900" aria-live="polite">
+      <p class="text-xs font-semibold uppercase tracking-wider text-accent-700 dark:text-accent-300">월 실수령액 (세후)</p>
+      <p class="mt-1 flex items-baseline gap-1">
+        <span id="net-monthly" class="tnum text-4xl font-extrabold sm:text-5xl">0</span>
+        <span class="text-xl font-bold text-gray-500">원</span>
+      </p>
+      <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">연 환산 <span id="net-yearly" class="tnum font-semibold">0</span> 원 · 공제율 <span id="ded-rate" class="font-semibold">0%</span></p>
+      <!-- 실수령 vs 공제 스택 바 -->
+      <div class="mt-4">
+        <div class="flex h-3.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-white/10">
+          <div id="bar-net" class="bar-fill h-full bg-gradient-to-r from-accent-500 to-brand-500" style="width:0%"></div>
+          <div id="bar-ded" class="bar-fill h-full bg-rose-400/80" style="width:0%"></div>
+        </div>
+        <div class="mt-1.5 flex justify-between text-xs text-gray-500">
+          <span>실수령 <span id="lbl-net">0%</span></span>
+          <span>공제 <span id="lbl-ded">0%</span> · <span id="ded-monthly" class="tnum">0</span>원</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 입력 -->
+    <section class="reveal rounded-3xl border border-gray-200 bg-white p-5 dark:border-white/10 dark:bg-surface-900 sm:p-6" aria-labelledby="calc-h">
+      <h2 id="calc-h" class="sr-only">입력값</h2>
+
+      <!-- 프리셋 칩 -->
+      <div class="mb-4 flex flex-wrap gap-2">
+        <span class="mr-1 self-center text-xs text-gray-500">빠른 선택</span>
+        {[2400, 3000, 3600, 4200, 5000, 6000, 8000].map((v) => (
+          <button type="button" class="chip preset rounded-full border border-gray-200 px-3 py-1 text-sm text-gray-600 hover:border-accent-500 hover:text-accent-600 dark:border-white/10 dark:text-gray-300" data-v={v * 10000}>{v >= 10000 ? v / 10000 + '억' : v + '만'}</button>
+        ))}
+      </div>
+
+      <!-- 연봉: 숫자 + 슬라이더 -->
+      <div class="mb-5">
+        <div class="mb-1 flex items-baseline justify-between">
+          <label for="salary" class="text-sm font-semibold">세전 연봉</label>
+          <span class="text-xs text-gray-500"><span id="salary-man" class="tnum font-semibold text-accent-700 dark:text-accent-300">4,000</span> 만원</span>
+        </div>
+        <input id="salary" type="number" min="0" step="1000000" value="40000000" inputmode="numeric" class="mb-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-lg tnum dark:border-white/15 dark:bg-surface-800" />
+        <input id="salary-range" type="range" class="rng" min="20000000" max="150000000" step="1000000" value="40000000" aria-label="연봉 슬라이더" />
+        <div class="mt-1 flex justify-between text-[11px] text-gray-400"><span>2,000만</span><span>1.5억</span></div>
+      </div>
+
+      <div class="grid gap-4 sm:grid-cols-3">
+        <div>
+          <label for="nontax" class="mb-1 block text-sm font-semibold">월 비과세액 (원)</label>
+          <input id="nontax" type="number" min="0" step="10000" value="200000" inputmode="numeric" class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 tnum dark:border-white/15 dark:bg-surface-800" />
+          <p class="mt-1 text-xs text-gray-500">식대 등. 기본 20만</p>
+        </div>
+        <div>
+          <label for="family" class="mb-1 block text-sm font-semibold">부양가족 (본인 포함)</label>
+          <div class="flex items-stretch overflow-hidden rounded-xl border border-gray-300 dark:border-white/15">
+            <button type="button" id="fam-minus" class="w-10 bg-gray-50 text-lg font-bold text-gray-600 hover:bg-gray-100 dark:bg-surface-800 dark:text-gray-300">−</button>
+            <input id="family" type="number" min="1" step="1" value="1" inputmode="numeric" class="w-full border-x border-gray-200 bg-white px-3 py-2 text-center tnum dark:border-white/10 dark:bg-surface-800" />
+            <button type="button" id="fam-plus" class="w-10 bg-gray-50 text-lg font-bold text-gray-600 hover:bg-gray-100 dark:bg-surface-800 dark:text-gray-300">+</button>
+          </div>
+        </div>
+        <div class="flex items-end">
+          <label class="flex cursor-pointer items-center gap-2 rounded-xl border border-gray-200 px-3 py-2.5 text-sm dark:border-white/10">
+            <input id="ismonthly" type="checkbox" class="h-4 w-4" /> <span>월급 기준</span>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <!-- 공제 내역 -->
+    <section class="reveal mt-5 rounded-3xl border border-gray-200 bg-white p-5 dark:border-white/10 dark:bg-surface-900 sm:p-6">
+      <h2 class="mb-3 text-base font-bold">공제 내역 (월)</h2>
+      <div class="space-y-2.5">
+        {[
+          ['pension', '국민연금', '4.75%'],
+          ['health', '건강보험', '3.595%'],
+          ['care', '장기요양', '건보료의 12.95%'],
+          ['emp', '고용보험', '0.9%'],
+          ['income', '소득세', '추정'],
+          ['local', '지방소득세', '소득세의 10%'],
+        ].map(([id, name, rate]) => (
+          <div>
+            <div class="flex items-baseline justify-between text-sm">
+              <span>{name} <span class="text-xs text-gray-400">{rate}</span></span>
+              <span class="tnum font-semibold" id={`p-${id}`}>0</span>
+            </div>
+            <div class="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-white/5">
+              <div class="bar-fill h-full rounded-full bg-accent-400/70" id={`bar-${id}`} style="width:0%"></div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- 계산 근거 -->
+    <section class="reveal mt-6 rounded-2xl border border-gray-200 bg-gray-50 p-5 text-sm text-gray-600 dark:border-white/10 dark:bg-surface-900 dark:text-gray-400">
+      <h2 class="mb-2 text-base font-bold text-gray-900 dark:text-gray-100">계산 근거 ({RATES_ASOF} 기준)</h2>
+      <p>4대보험은 월 과세소득(급여−비과세)에 근로자 부담 요율을 적용합니다: 국민연금 4.75%(2026년 9.5%로 인상, 근로자 절반), 건강보험 3.595%, 장기요양 건강보험료의 12.95%, 고용보험 0.9%. 국민연금은 기준소득월액 상·하한이 적용됩니다. {INSURANCE.note}</p>
+      <p class="mt-2">{TAX_META.note}</p>
+      <p class="mt-2 text-xs text-gray-500">요율 출처: 확인일 {RATES_ASOF} · <a class="underline" href={INSURANCE.sources[0]} target="_blank" rel="noopener nofollow">참고1</a> · <a class="underline" href={INSURANCE.sources[1]} target="_blank" rel="noopener nofollow">참고2</a>. 장기요양·연금 상하한은 고시에 따라 변동하니 정확한 신고는 공식 계산기로 확인하세요.</p>
+    </section>
+
+    <section class="reveal mt-8">
+      <h2 class="mb-3 text-xl font-bold tracking-tight">자주 묻는 질문</h2>
+      <div class="space-y-3">
+        {faqs.map((f) => (
+          <details class="group rounded-xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-surface-900">
+            <summary class="cursor-pointer list-none font-semibold marker:hidden">{f.q}</summary>
+            <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">{f.a}</p>
+          </details>
+        ))}
+      </div>
+    </section>
+  </div>
+
+  <script is:inline define:vars={{ client }}>
+    (function () {
+      var INS = client.INSURANCE, BR = client.INCOME_TAX_BRACKETS, ED = client.EARNED_INCOME_DEDUCTION;
+      var $ = function (id) { return document.getElementById(id); };
+      var fmt = function (n) { return Math.round(n).toLocaleString('ko-KR'); };
+
+      function earnedDeduction(g){for(var i=0;i<ED.length;i++){if(g<=ED[i][0]){var b=i===0?0:ED[i-1][0];return ED[i][2]+(g-b)*ED[i][1];}}return g;}
+      function progressiveTax(t){for(var i=0;i<BR.length;i++){if(t<=BR[i][0])return t*BR[i][1]-BR[i][2];}return 0;}
+      function wageTaxCredit(c,g){var cr=c<=1300000?c*0.55:715000+(c-1300000)*0.30;var l;if(g<=33000000)l=740000;else if(g<=70000000)l=Math.max(660000,740000-(g-33000000)*0.008);else if(g<=120000000)l=Math.max(500000,660000-(g-70000000)*0.5);else l=Math.max(200000,500000-(g-120000000)*0.5);return Math.min(cr,l);}
+
+      // 카운트업 애니메이션
+      function animateNum(el, to) {
+        var from = parseFloat((el.dataset.v || '0')); el.dataset.v = to;
+        var start = performance.now(), dur = 450;
+        function step(now){ var p = Math.min(1,(now-start)/dur); var e = 1-Math.pow(1-p,3); el.textContent = fmt(from+(to-from)*e); if(p<1) requestAnimationFrame(step); }
+        requestAnimationFrame(step);
+      }
+
+      var last = {};
+      function calc(animate) {
+        var isMonthly = $('ismonthly').checked;
+        var raw = parseFloat($('salary').value) || 0;
+        var annualGross = isMonthly ? raw * 12 : raw;
+        var nonTax = parseFloat($('nontax').value) || 0;
+        var family = Math.max(1, parseInt($('family').value) || 1);
+        var mGross = annualGross / 12;
+        var mTax = Math.max(0, mGross - nonTax);
+
+        var pensionBase = Math.min(Math.max(mTax, INS.pensionBaseMin), INS.pensionBaseMax);
+        var pension = pensionBase * INS.pension, health = mTax * INS.health, care = health * INS.longTermCareOfHealth, emp = mTax * INS.employment;
+        var annualTaxable = mTax * 12;
+        var earnedInc = annualTaxable - earnedDeduction(annualTaxable);
+        var taxBase = Math.max(0, earnedInc - family * 1500000);
+        var calcTax = Math.max(0, progressiveTax(taxBase));
+        var decided = Math.max(0, calcTax - wageTaxCredit(calcTax, annualTaxable));
+        var income = decided / 12, local = income * 0.10;
+        var ded = pension + health + care + emp + income + local;
+        var net = Math.max(0, mGross - ded);
+
+        animateNum($('net-monthly'), net);
+        $('net-yearly').textContent = fmt(net * 12);
+        $('ded-monthly').textContent = fmt(ded);
+        var dedRate = mGross > 0 ? (ded / mGross * 100) : 0;
+        $('ded-rate').textContent = dedRate.toFixed(1) + '%';
+        var netPct = mGross > 0 ? (net / mGross * 100) : 0;
+        $('bar-net').style.width = netPct + '%';
+        $('bar-ded').style.width = (100 - netPct) + '%';
+        $('lbl-net').textContent = netPct.toFixed(0) + '%';
+        $('lbl-ded').textContent = (100 - netPct).toFixed(0) + '%';
+
+        var items = { pension: pension, health: health, care: care, emp: emp, income: income, local: local };
+        var maxItem = Math.max(pension, health, care, emp, income, local, 1);
+        Object.keys(items).forEach(function (k) {
+          $('p-' + k).textContent = fmt(items[k]);
+          $('bar-' + k).style.width = (items[k] / maxItem * 100) + '%';
+        });
+        // 연봉 만원 표시 + 팝
+        $('salary-man').textContent = fmt(annualGross / 10000);
+        if (animate) { var c = $('net-monthly'); c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop'); }
+        try { if (window.gtag) window.gtag('event', 'salary_calc'); } catch (e) {}
+      }
+
+      // 입력 ↔ 슬라이더 동기화
+      var salary = $('salary'), range = $('salary-range');
+      salary.addEventListener('input', function () { var v = parseFloat(salary.value) || 0; if (!$('ismonthly').checked) range.value = Math.min(150000000, Math.max(20000000, v)); calc(true); });
+      range.addEventListener('input', function () { salary.value = range.value; $('ismonthly').checked = false; calc(true); });
+      $('nontax').addEventListener('input', function(){ calc(true); });
+      $('family').addEventListener('input', function(){ calc(true); });
+      $('ismonthly').addEventListener('change', function(){ calc(true); });
+      $('fam-minus').addEventListener('click', function(){ $('family').value = Math.max(1,(parseInt($('family').value)||1)-1); calc(true); });
+      $('fam-plus').addEventListener('click', function(){ $('family').value = (parseInt($('family').value)||1)+1; calc(true); });
+      document.querySelectorAll('.preset').forEach(function(b){ b.addEventListener('click', function(){ salary.value = b.dataset.v; range.value = b.dataset.v; $('ismonthly').checked=false; calc(true); }); });
+
+      calc(false);
+    })();
+  </script>
+</Layout>

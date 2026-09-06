@@ -1,0 +1,60 @@
+---
+// 뉴스레터 구독 폼 — PUBLIC_NEWSLETTER_ACTION(폼 POST 주소) 설정 시에만 렌더.
+// 미설정 시 "준비 중" 문구를 노출하지 않고 컴포넌트 자체를 숨긴다(지시서 1-2).
+// 예: Buttondown https://buttondown.com/api/emails/embed-subscribe/{계정}
+interface Props {
+  compact?: boolean;
+}
+const { compact = false } = Astro.props;
+const action = import.meta.env.PUBLIC_NEWSLETTER_ACTION ?? '';
+const enabled = action !== '';
+---
+
+{enabled && (
+  <div class={`rounded-2xl border border-gray-200 bg-gray-50 dark:border-white/10 dark:bg-surface-900 ${compact ? 'p-4' : 'p-6'}`}>
+    <p class={`font-bold ${compact ? 'text-sm' : 'text-lg'}`}>📮 새 글을 메일로 받아보세요</p>
+    <p class={`mt-1 text-gray-500 ${compact ? 'text-xs' : 'text-sm'}`}>AI·테크 트렌드, 핵심만 골라 보내드립니다. 스팸 없음.</p>
+    <form
+      action={action}
+      method="post"
+      target="_blank"
+      data-newsletter
+      class={`mt-3 flex gap-2 ${compact ? 'flex-col' : 'flex-col sm:flex-row'}`}
+    >
+      {/* 봇 방지 honeypot — 사람에겐 숨김, 채워지면 제출 무시 */}
+      <input type="text" name="hp_website" tabindex="-1" autocomplete="off" aria-hidden="true" class="hidden" />
+      <label for={compact ? 'nl-email-c' : 'nl-email'} class="sr-only">이메일 주소</label>
+      <input
+        id={compact ? 'nl-email-c' : 'nl-email'}
+        type="email"
+        name="email"
+        required
+        placeholder="이메일 주소"
+        class="min-w-0 flex-1 rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm outline-none transition-colors focus:border-accent-500 dark:border-white/15 dark:bg-surface-800 dark:text-gray-100"
+      />
+      <button
+        type="submit"
+        class="rounded-xl bg-accent-500 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-accent-600"
+      >구독하기</button>
+    </form>
+    <p class={`mt-2 text-gray-400 ${compact ? 'text-[10px]' : 'text-xs'}`}>수집된 이메일은 뉴스레터 발송에만 사용됩니다. <a href="/privacy/" class="underline">개인정보처리방침</a></p>
+  </div>
+)}
+
+<script is:inline>
+  // 뉴스레터 제출 이벤트(GA4) + honeypot 차단. GA 미설치면 자동 no-op.
+  (() => {
+    const bind = () => {
+      document.querySelectorAll('form[data-newsletter]:not([data-bound])').forEach((f) => {
+        f.dataset.bound = '1';
+        f.addEventListener('submit', (e) => {
+          const hp = f.querySelector('input[name="hp_website"]');
+          if (hp && hp.value) { e.preventDefault(); return; }
+          if (typeof window.gtag === 'function') window.gtag('event', 'newsletter_submit');
+        });
+      });
+    };
+    bind();
+    document.addEventListener('astro:page-load', bind);
+  })();
+</script>

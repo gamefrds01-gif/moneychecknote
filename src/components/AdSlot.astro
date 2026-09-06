@@ -1,0 +1,30 @@
+---
+// 애드센스 광고 슬롯 — 승인 전에는 아무것도 렌더하지 않는다.
+// 승인 후: .env 에 PUBLIC_ADSENSE_ID(pub-XXXX)와 슬롯 ID를 넣으면 활성화.
+// 배치 원칙(operations.md): 상단·본문중간·하단 + 반응형, 과밀·위장 금지.
+interface Props {
+  position: 'top' | 'middle' | 'bottom';
+}
+
+const { position } = Astro.props;
+const adsenseId = import.meta.env.PUBLIC_ADSENSE_ID ?? '';
+const slotId = import.meta.env[`PUBLIC_ADSENSE_SLOT_${position.toUpperCase()}`] ?? '';
+const enabled = adsenseId !== '' && slotId !== '';
+---
+
+{enabled && (
+  <div class="my-6" data-ad-position={position}>
+    <ins
+      class="adsbygoogle"
+      style="display:block"
+      data-ad-client={adsenseId}
+      data-ad-slot={slotId}
+      data-ad-format="auto"
+      data-full-width-responsive="true"></ins>
+    <script is:inline>
+      if (!window.__PCN_AUTOMATION_VISIT__) {
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+      }
+    </script>
+  </div>
+)}

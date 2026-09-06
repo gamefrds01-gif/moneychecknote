@@ -1,0 +1,156 @@
+---
+import { getCollection, render } from 'astro:content';
+import Layout from '../../layouts/Layout.astro';
+import AdSlot from '../../components/AdSlot.astro';
+import PostCard from '../../components/PostCard.astro';
+import ShareButtons from '../../components/ShareButtons.astro';
+import NewsletterForm from '../../components/NewsletterForm.astro';
+import { CATEGORIES } from '../../consts';
+import { articleSchema, breadcrumbSchema, videoSchema } from '../../lib/schema';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('blog', ({ data, id }) => !data.draft && !id.includes('/'));
+  return posts.map((post) => ({
+    params: { slug: post.id },
+    props: { post },
+  }));
+}
+
+const { post } = Astro.props;
+const { title, description, pubDate, updatedDate, category, tags } = post.data;
+const { Content, headings } = await render(post);
+const toc = headings.filter((h) => h.depth === 2 || h.depth === 3);
+const dateStr = pubDate.toLocaleDateString('ko-KR', {
+  year: 'numeric', month: 'long', day: 'numeric',
+});
+const pageUrl = new URL(`/posts/${post.id}/`, Astro.site).toString();
+const ogThumb = `/og/${post.id}.png`;
+const thumbPath = post.data.ogImage ?? ogThumb;
+const urlPath = `/posts/${post.id}/`;
+
+// 구조화 데이터: NewsArticle/BlogPosting + Breadcrumb (+ 실제 영상 있을 때만 VideoObject)
+const videoMatch = post.body?.match(/\/videos\/[^\s"')]+\.mp4/);
+const jsonLd: object[] = [
+  articleSchema({ title, description, category, tags, pubDate, updatedDate, urlPath, ogPath: thumbPath }),
+  breadcrumbSchema([
+    { name: '홈', url: '/' },
+    { name: CATEGORIES[category] ?? category, url: `/category/${category}/` },
+    { name: title, url: urlPath },
+  ]),
+];
+if (videoMatch) {
+  jsonLd.push(videoSchema({
+    name: title, description,
+    thumbnailPath: thumbPath, contentPath: videoMatch[0], uploadDate: pubDate,
+  }));
+}
+
+// 관련 글: 같은 카테고리 최신 3개 (자기 자신 제외)
+const related = (await getCollection('blog', ({ data, id }) => !data.draft && !id.includes('/') && data.category === category && id !== post.id))
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
+  .slice(0, 3);
+
+// 언어 버전(있는 것만) → 토글 + hreflang
+const allI18n = await getCollection('blog', ({ data }) => !data.draft);
+const langOf = (id: string) => (id.startsWith('en/') ? 'en' : id.startsWith('ja/') ? 'ja' : 'ko');
+const baseOf = (id: string) => (id.includes('/') ? id.split('/').slice(1).join('/') : id);
+const versions = allI18n.filter((pp) => baseOf(pp.id) === post.id).map((pp) => langOf(pp.id));
+const langOrder = ['ko', 'en', 'ja'].filter((l) => versions.includes(l));
+const hrefFor = (l: string) => (l === 'ko' ? `/posts/${post.id}/` : `/${l}/posts/${post.id}/`);
+const alternates = langOrder.map((l) => ({ hreflang: l, href: new URL(hrefFor(l), Astro.site).toString() }));
+if (langOrder.length > 1) alternates.push({ hreflang: 'x-default', href: new URL(hrefFor('ko'), Astro.site).toString() });
+const LANGLABEL: Record<string, string> = { ko: '한국어', en: 'English', ja: '日本語' };
+---
+
+<Layout title={title} description={description} ogImage={ogThumb} ogType="article" lang="ko" alternates={alternates} jsonLd={jsonLd}>
+  <div class="mx-auto grid max-w-5xl gap-10 xl:grid-cols-[minmax(0,1fr)_220px]">
+    <article class="min-w-0" data-pagefind-body>
+      <header class="reveal mb-8 border-b border-gray-200/80 pb-8 dark:border-white/10">
+        <div class="mb-3 flex flex-wrap items-center gap-3 text-sm text-gray-500">
+          <a
+            href={`/category/${category}/`}
+            class="rounded-full bg-accent-500/10 px-3 py-1 font-semibold text-accent-600 transition-colors hover:bg-accent-500/20 dark:text-accent-400"
+          >{CATEGORIES[category]}</a>
+          <time datetime={pubDate.toISOString()}>{dateStr}</time>
+          {updatedDate && <span>(수정: {updatedDate.toLocaleDateString('ko-KR')})</span>}
+          <span class="text-gray-300 dark:text-gray-600" aria-hidden="true">·</span>
+          <span>작성·검수 <a href="/authors/editorial/" rel="author" class="font-medium text-gray-600 transition-colors hover:text-accent-600 dark:text-gray-400 dark:hover:text-accent-400">이광희</a></span>
+          {langOrder.length > 1 && (
+            <span class="flex items-center gap-1.5">
+              {langOrder.map((l) => (
+                l === 'ko'
+                  ? <span class="rounded-full bg-accent-500/15 px-2.5 py-0.5 text-xs font-semibold text-accent-600 dark:text-accent-400">{LANGLABEL[l]}</span>
+                  : <a href={hrefFor(l)} class="rounded-full px-2.5 py-0.5 text-xs text-gray-500 hover:bg-gray-200/70 hover:text-gray-900 dark:hover:bg-white/10 dark:hover:text-white">{LANGLABEL[l]}</a>
+              ))}
+            </span>
+          )}
+        </div>
+        <h1 class="text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl">{title}</h1>
+        <p class="mt-4 text-lg leading-relaxed text-gray-600 dark:text-gray-400">{description}</p>
+        <div class="mt-5" data-pagefind-ignore>
+          <ShareButtons title={title} url={pageUrl} />
+        </div>
+      </header>
+
+      <AdSlot position="top" />
+
+      <div class="prose prose-gray dark:prose-invert prose-headings:scroll-mt-24 prose-headings:tracking-tight prose-a:text-accent-600 dark:prose-a:text-accent-400">
+        <Content components={{ AdSlot }} />
+      </div>
+
+      <AdSlot position="bottom" />
+
+      {tags.length > 0 && (
+        <footer class="mt-10 flex flex-wrap gap-2 border-t border-gray-200/80 pt-5 dark:border-white/10">
+          {tags.map((tag) => (
+            <span class="rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-600 dark:bg-white/5 dark:text-gray-400">#{tag}</span>
+          ))}
+        </footer>
+      )}
+
+      <div class="mt-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-gray-200 p-4 dark:border-white/10" data-pagefind-ignore>
+        <ShareButtons title={title} url={pageUrl} />
+      </div>
+
+      <div class="mt-6" data-pagefind-ignore>
+        <NewsletterForm />
+      </div>
+
+      {related.length > 0 && (
+        <section class="mt-12" data-pagefind-ignore>
+          <h2 class="mb-4 flex items-center gap-2.5 text-lg font-bold tracking-tight">
+            <span class="inline-block h-4.5 w-1 rounded-full bg-accent-500"></span>
+            {CATEGORIES[category]} 관련 글
+          </h2>
+          <div class="grid gap-5 sm:grid-cols-3">
+            {related.map((p) => <PostCard post={p} />)}
+          </div>
+        </section>
+      )}
+    </article>
+
+    {toc.length > 1 && (
+      <aside class="hidden xl:block" data-pagefind-ignore>
+        <nav class="sticky top-24 text-sm">
+          <p class="mb-3 font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">목차</p>
+          <ul class="space-y-2 border-l border-gray-200 dark:border-white/10">
+            {toc.map((h) => (
+              <li>
+                <a
+                  href={`#${h.slug}`}
+                  class:list={[
+                    '-ml-px block border-l-2 border-transparent py-0.5 text-gray-500 transition-colors hover:border-accent-500 hover:text-gray-900 dark:hover:text-white',
+                    h.depth === 2 ? 'pl-4' : 'pl-7 text-xs',
+                  ]}
+                >{h.text}</a>
+              </li>
+            ))}
+          </ul>
+          <div class="mt-6">
+            <NewsletterForm compact />
+          </div>
+        </nav>
+      </aside>
+    )}
+  </div>
+</Layout>

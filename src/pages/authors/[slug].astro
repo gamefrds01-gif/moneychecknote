@@ -1,0 +1,52 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { SITE_TITLE } from '../../consts';
+import { breadcrumbSchema, SITE_URL } from '../../lib/schema';
+
+const AUTHORS: Record<string, { name: string; role: string; bio: string }> = {
+  editorial: {
+    name: '이광희',
+    role: '편집장 · 아우리온(Aurion) 운영',
+    bio: '대구에서 아우리온(Aurion)을 운영하며, 세금·4대보험·정부지원금 정보를 공식 자료로 직접 확인해 계산기와 안내로 정리합니다. 요율·정책은 검색으로 도는 값 대신 공식 고시·기관 페이지를 열어 확인하고 확인일을 함께 적습니다. 계산기는 계산 근거(요율·공식)를 그대로 공개하며, 오류를 발견하면 정정 안내에 따라 바로 고칩니다. 문의는 문의 페이지로 받습니다.',
+  },
+};
+
+export function getStaticPaths() {
+  // getStaticPaths는 격리 실행되어 상단 상수를 참조하지 못하므로 slug를 인라인으로 나열
+  return [{ params: { slug: 'editorial' } }];
+}
+
+const { slug } = Astro.params;
+const author = AUTHORS[slug as string];
+
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'ProfilePage',
+    mainEntity: {
+      '@type': 'Person',
+      name: author.name,
+      jobTitle: author.role,
+      description: author.bio,
+      url: `${SITE_URL}/authors/${slug}/`,
+      worksFor: { '@type': 'Organization', name: '아우리온(Aurion)' },
+    },
+  },
+  breadcrumbSchema([
+    { name: '홈', url: '/' },
+    { name: '작성자', url: `/authors/${slug}/` },
+    { name: author.name, url: `/authors/${slug}/` },
+  ]),
+];
+---
+
+<Layout title={author.name} description={author.bio} jsonLd={jsonLd}>
+  <div class="prose prose-gray dark:prose-invert">
+    <h1>{author.name}</h1>
+    <p class="text-sm font-semibold uppercase tracking-wide text-accent-600 dark:text-accent-400">{author.role}</p>
+    <p>{author.bio}</p>
+    <p>
+      작성·검수 기준은 <a href="/editorial-policy/">편집 원칙</a>을, 정정은 <a href="/corrections/">정정 안내</a>를 따릅니다.
+    </p>
+  </div>
+</Layout>
