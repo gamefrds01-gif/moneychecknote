@@ -3,10 +3,15 @@ import Layout from '../../layouts/Layout.astro';
 import { breadcrumbSchema } from '../../lib/schema';
 
 const calculators = [
-  { href: '/calc/salary/', name: '연봉 실수령액 계산기', desc: '2026 4대보험·소득세 반영 세후 월급', live: true },
-  { href: '/calc/loan/', name: '대출 계산기', desc: '원리금균등·원금균등·만기일시 + 거치·월별 상환표', live: true },
-  { href: '/calc/severance/', name: '퇴직금 계산기', desc: '평균임금 기준 예상 퇴직금', live: true },
-  { href: '/calc/unemployment/', name: '실업급여 계산기', desc: '2026 구직급여 예상 수급액·일수', live: true },
+  { href: '/calc/salary/', name: '연봉 실수령액 계산기', desc: '2026 4대보험·소득세 반영 세후 월급 + 연봉별 빠른표', live: true },
+  { href: '/calc/hourly/', name: '시급·주휴수당 계산기', desc: '근로기준법 주휴수당·주급·월급 환산(2026 최저 10,320)', live: true },
+  { href: '/calc/loan/', name: '대출 계산기', desc: '원리금균등·원금균등·만기일시 + 거치·상환표·DSR', live: true },
+  { href: '/calc/severance/', name: '퇴직금 계산기', desc: '평균임금 기준 + 퇴직소득세 세후 실수령', live: true },
+  { href: '/calc/unemployment/', name: '실업급여 계산기', desc: '2026 구직급여 예상액·일수 + 28일분 지급', live: true },
+  { href: '/calc/cartax/', name: '자동차세 계산기', desc: '배기량·차령 경감 + 1월 연납 할인', live: true },
+  { href: '/calc/electricity/', name: '전기요금 계산기', desc: '주택용 저압 누진 3구간 예상 청구액', live: true },
+  { href: '/calc/income-tax/', name: '종합소득세 계산기', desc: '과세표준 누진세율 + 지방소득세', live: true },
+  { href: '/calc/vat/', name: '부가세 계산기', desc: '공급가액·합계 양방향 부가가치세 10%', live: true },
 ];
 
 const jsonLd = breadcrumbSchema([{ name: '홈', url: '/' }, { name: '계산기', url: '/calc/' }]);

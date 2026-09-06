@@ -63,6 +63,43 @@ export const UNEMPLOYMENT = {
   asof: '2026-09-06',
 };
 
+// 주휴수당 — 근로기준법 제55조·시행령 제30조. 시급은 2026 최저임금(10,320) 참조.
+export const HOURLY = {
+  minWageHour: 10320, // 2026 최저임금 시급
+  weeklyHolidayThreshold: 15, // 주 소정근로시간 15시간 이상이어야 주휴수당 발생
+  fullWeekHours: 40, // 주 40시간 기준(초과분은 주휴 산정에 미포함)
+  holidayHours: 8, // 주 40시간 기준 주휴 8시간분
+  asof: '2026-09-06',
+};
+
+// 자동차세(비영업 승용) — 지방세법. cc당 세액·지방교육세·차령경감·연납 공제.
+export const CAR_TAX = {
+  // [배기량 상한(cc), cc당 세액(원)]
+  ccRates: [[1000, 80], [1600, 140], [Infinity, 200]] as [number, number][],
+  eduTaxRate: 0.30, // 지방교육세 = 자동차세의 30%
+  // 차령 경감: 3년차부터 매년 5%p, 최대 50%. 경감률 = min(50%, max(0,(차령-2)*5%))
+  agingStartYear: 3,
+  agingStepPct: 0.05,
+  agingMaxPct: 0.50,
+  prepayJanDiscount: 0.05, // 2026년 1월 연납(연세액 일시납) 공제율 약 5%(지방세법 시행령, 매년 축소·위택스 확인)
+  asof: '2026-09-06',
+};
+
+// 주택용 저압 전기요금 — 한전 기본공급약관(누진 3구간).
+export const ELEC = {
+  // 구간 경계(kWh): 200, 400
+  tier1Max: 200,
+  tier2Max: 400,
+  baseFee: [910, 1600, 7300], // 기본요금(원): 200이하 / 201~400 / 400초과
+  energyRate: [120, 214, 307], // 전력량요금(원/kWh): 1구간 / 2구간 / 3구간
+  climateRate: 9.0, // 기후환경요금(원/kWh) — 개정 시 변동, 입력 조정 가능
+  fuelAdjRate: 5.0, // 연료비조정요금(원/kWh)
+  vatRate: 0.10, // 부가가치세
+  fundRate: 0.037, // 전력산업기반기금
+  tvFee: 2500, // TV수신료(선택)
+  asof: '2026-09-06',
+};
+
 // 각 계산기의 근거·출처(공식 발행처 + 적용연도). 계산기 페이지에 그대로 노출.
 export const SOURCE_META: Record<string, { label: string; items: { name: string; org: string; url: string }[]; authority?: string }> = {
   salary: {
@@ -94,6 +131,39 @@ export const SOURCE_META: Record<string, { label: string; items: { name: string;
     label: '평균임금 기준 퇴직금 (근로기준법)',
     items: [
       { name: '평균임금 산정(퇴직 전 3개월 임금 ÷ 91.25 × 30 × 재직일수/365)', org: '근로기준법 제2조·고용노동부', url: 'https://www.moel.go.kr' },
+      { name: '퇴직소득세 간이 산정(근속연수공제·환산급여·연분연승)', org: '소득세법·국세청', url: 'https://www.nts.go.kr' },
     ],
+  },
+  hourly: {
+    label: '최저임금·주휴수당 (2026년 적용)',
+    items: [
+      { name: '최저임금 시급 10,320원', org: '최저임금위원회·고용노동부(2026년)', url: 'https://www.minimumwage.go.kr' },
+      { name: '주휴수당(주 15시간 이상·개근 시 유급휴일 1일)', org: '근로기준법 제55조·시행령 제30조', url: 'https://www.law.go.kr' },
+    ],
+    authority: '주휴수당은 1주 소정근로시간이 15시간 이상이고 그 주의 소정근로일을 개근한 근로자에게 지급됩니다(정규·알바 무관). 15시간 미만이면 발생하지 않습니다.',
+  },
+  cartax: {
+    label: '자동차세(비영업 승용) — 배기량 기준 (지방세법)',
+    items: [
+      { name: 'cc당 세액(≤1000cc 80원·≤1600cc 140원·>1600cc 200원)+지방교육세 30%', org: '지방세법·행정안전부', url: 'https://www.law.go.kr' },
+      { name: '차령 경감(3년차 5%~12년 50%)·연납 공제', org: '위택스(지방세 납부)', url: 'https://www.wetax.go.kr' },
+    ],
+    authority: '연납 공제율은 지방세법 시행령 개정으로 매년 조정됩니다(최근 축소 추세). 정확한 고지·납부는 위택스에서 확인하세요.',
+  },
+  elec: {
+    label: '주택용 저압 전기요금 — 누진 3구간 (한전 기본공급약관)',
+    items: [
+      { name: '기본요금·전력량요금(120·214·307원/kWh)+기후환경·연료비조정', org: '한국전력공사(KEPCO)', url: 'https://cyber.kepco.co.kr' },
+      { name: '부가세 10%+전력산업기반기금 3.7%', org: '한전 기본공급약관', url: 'https://cyber.kepco.co.kr' },
+    ],
+    authority: '기후환경요금·연료비조정요금·계절/구간은 한전 요율 개정에 따라 변동합니다. 정확한 청구액은 한전ON·고객센터(123)로 확인하세요.',
+  },
+  income: {
+    label: '종합소득세·부가가치세 (소득세법·부가가치세법)',
+    items: [
+      { name: '종합소득세 누진세율(6~45%)+지방소득세 10%', org: '국세청(소득세법)', url: 'https://www.nts.go.kr' },
+      { name: '부가가치세 10%(일반과세)·간이과세 별도', org: '국세청(부가가치세법)', url: 'https://www.nts.go.kr' },
+    ],
+    authority: '종합소득세는 필요경비·소득공제·세액공제에 따라 크게 달라지는 간이 추정입니다. 정확한 신고는 홈택스·세무 전문가로 확인하세요.',
   },
 };

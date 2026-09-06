@@ -1,0 +1,96 @@
+---
+// 자동차세 계산기 — 비영업 승용. 배기량 cc당 세액 + 지방교육세 30% + 차령경감 + 1월 연납 공제.
+import Layout from '../../layouts/Layout.astro';
+import { CAR_TAX, SOURCE_META } from '../../data/rates';
+import { breadcrumbSchema } from '../../lib/schema';
+import SourceMeta from '../../components/SourceMeta.astro';
+
+const client = { CAR_TAX };
+
+const faqs = [
+  { q: '자동차세는 어떻게 매겨지나요?', a: '비영업용 승용차는 배기량(cc)에 cc당 세액을 곱해 산정합니다. 1,000cc 이하 80원, 1,600cc 이하 140원, 1,600cc 초과 200원(cc당)입니다. 여기에 지방교육세 30%가 더해집니다.' },
+  { q: '오래된 차는 세금이 줄어드나요?', a: '네. 차령 3년차부터 매년 5%씩 경감되어 12년차 이상은 최대 50%까지 감면됩니다(자동차세 본세 기준). 신차~2년차는 경감이 없습니다.' },
+  { q: '연납(1월 일시납)하면 얼마나 할인되나요?', a: '연세액을 1월에 한 번에 내면 남은 기간 이자만큼 공제받습니다. 2026년 1월 연납 공제율은 약 5% 수준입니다. 3·6·9월 연납은 그보다 공제폭이 작습니다. 공제율은 매년 축소되는 추세라 위택스에서 확인하세요.' },
+  { q: '자동차세는 언제 내나요?', a: '연납을 안 하면 6월(1기분)·12월(2기분) 두 번에 나눠 냅니다. 연납은 1·3·6·9월 중 신청할 수 있고, 1월 연납이 공제폭이 가장 큽니다.' },
+];
+
+const jsonLd = [
+  breadcrumbSchema([{ name: '홈', url: '/' }, { name: '계산기', url: '/calc/' }, { name: '자동차세 계산기', url: '/calc/cartax/' }]),
+  { '@context': 'https://schema.org', '@type': 'WebApplication', name: '자동차세 계산기 2026', applicationCategory: 'FinanceApplication', operatingSystem: 'All', offers: { '@type': 'Offer', price: '0', priceCurrency: 'KRW' }, url: 'https://money.pointchecknote.com/calc/cartax/' },
+  { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: faqs.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })) },
+];
+---
+
+<Layout title="자동차세 계산기 2026 — 배기량·차령·연납 할인 계산" description="배기량(cc)과 차령을 넣으면 비영업 승용차 자동차세(지방교육세 30% 포함)와 차령 경감·1월 연납 할인액을 계산합니다. 2026 기준." jsonLd={jsonLd}>
+  <div class="mx-auto max-w-3xl">
+    <nav class="mb-4 text-sm text-gray-500" aria-label="위치"><a href="/" class="hover:text-accent-600">홈</a> › <a href="/calc/" class="hover:text-accent-600">계산기</a> › <span class="text-gray-700 dark:text-gray-300">자동차세</span></nav>
+    <header class="reveal mb-6">
+      <h1 class="text-3xl font-extrabold tracking-tight sm:text-4xl">자동차세 계산기</h1>
+      <p class="mt-3 text-gray-600 dark:text-gray-400">배기량과 차령을 넣으면 <strong>연 자동차세(지방교육세 포함)</strong>와 <strong>1월 연납 할인액</strong>을 계산합니다. 비영업용 승용차 기준.</p>
+    </header>
+
+    <section class="reveal mb-5 grid gap-4 sm:grid-cols-2">
+      <div class="overflow-hidden rounded-3xl border border-accent-200 bg-gradient-to-br from-accent-50 to-white p-6 shadow-sm dark:border-accent-500/30 dark:from-accent-500/10 dark:to-surface-900">
+        <p class="text-xs font-semibold uppercase tracking-wider text-accent-700 dark:text-accent-300">연 자동차세 (지방교육세 포함)</p>
+        <p class="mt-1"><span id="total" class="tnum text-3xl font-extrabold sm:text-4xl">0</span> <span class="font-bold text-gray-500">원</span></p>
+        <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">본세 <span id="base" class="tnum font-semibold">0</span> + 교육세 <span id="edu" class="tnum font-semibold">0</span></p>
+      </div>
+      <div class="rounded-3xl border border-gray-200 bg-white p-6 dark:border-white/10 dark:bg-surface-900">
+        <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">1월 연납 시</p>
+        <p class="mt-1"><span id="prepay" class="tnum text-3xl font-extrabold sm:text-4xl">0</span> <span class="font-bold text-gray-500">원</span></p>
+        <p class="mt-1 text-sm text-emerald-600 dark:text-emerald-400">약 <span id="save" class="tnum font-semibold">0</span> 원 절약 (<span id="agepct">0</span>% 차령경감 적용)</p>
+      </div>
+    </section>
+
+    <section class="reveal rounded-3xl border border-gray-200 bg-white p-5 dark:border-white/10 dark:bg-surface-900 sm:p-6">
+      <label for="cc" class="mb-1 block text-sm font-semibold">배기량 (cc)</label>
+      <div class="mb-2 flex flex-wrap gap-2">
+        {[[1000,'경차 1000'],[1598,'아반떼 1598'],[1999,'쏘나타 1999'],[2497,'그랜저 2497'],[3342,'대형 3342']].map(([v,label]) => (
+          <button type="button" class="ccpreset rounded-full border border-gray-300 px-3 py-1 text-sm font-semibold hover:border-accent-500 hover:text-accent-600 dark:border-white/15" data-v={v}>{label}</button>
+        ))}
+      </div>
+      <input id="cc" type="text" inputmode="numeric" autocomplete="off" value="1,999" class="mb-4 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-lg tnum dark:border-white/15 dark:bg-surface-800" />
+      <label for="age" class="mb-1 block text-sm font-semibold">차령 (년)</label>
+      <input id="age" type="text" inputmode="numeric" autocomplete="off" value="3" class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 tnum dark:border-white/15 dark:bg-surface-800" />
+      <p class="mt-1 text-xs text-gray-500">최초 등록 후 경과 연수. 3년차부터 매년 5%씩, 12년 이상 최대 50% 경감.</p>
+    </section>
+
+    <SourceMeta meta={SOURCE_META.cartax} asof={CAR_TAX.asof} />
+
+    <section class="reveal mt-8">
+      <h2 class="mb-3 text-xl font-bold tracking-tight">자주 묻는 질문</h2>
+      <div class="space-y-3">{faqs.map((f) => (<details class="rounded-xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-surface-900"><summary class="cursor-pointer font-semibold">{f.q}</summary><p class="mt-2 text-sm text-gray-600 dark:text-gray-400">{f.a}</p></details>))}</div>
+    </section>
+  </div>
+
+  <script is:inline define:vars={{ client }}>
+    (function () {
+      var C = client.CAR_TAX;
+      var $ = function (id) { return document.getElementById(id); };
+      var digits = function (v) { return parseInt(String(v).replace(/[^0-9]/g, ''), 10) || 0; };
+      var won = function (n) { return Math.round(n).toLocaleString('ko-KR'); };
+      function fmtField(el) { var d = digits(el.value); el.value = d ? d.toLocaleString('ko-KR') : ''; }
+      function ccRate(cc) { for (var i = 0; i < C.ccRates.length; i++) { if (cc <= C.ccRates[i][0]) return C.ccRates[i][1]; } return 200; }
+      function agingPct(age) { if (age < C.agingStartYear) return 0; return Math.min(C.agingMaxPct, (age - 2) * C.agingStepPct); }
+      function calc() {
+        var cc = digits($('cc').value);
+        var age = digits($('age').value);
+        var pct = agingPct(age);
+        var base = cc * ccRate(cc) * (1 - pct);   // 본세(차령경감 적용)
+        var edu = base * C.eduTaxRate;            // 지방교육세 30%
+        var total = base + edu;
+        var prepay = total * (1 - C.prepayJanDiscount);
+        $('base').textContent = won(base);
+        $('edu').textContent = won(edu);
+        $('total').textContent = won(total);
+        $('prepay').textContent = won(prepay);
+        $('save').textContent = won(total - prepay);
+        $('agepct').textContent = Math.round(pct * 100);
+      }
+      $('cc').addEventListener('input', function () { fmtField($('cc')); calc(); });
+      $('age').addEventListener('input', function () { fmtField($('age')); calc(); });
+      Array.prototype.forEach.call(document.querySelectorAll('.ccpreset'), function (b) { b.addEventListener('click', function () { $('cc').value = digits(b.getAttribute('data-v')).toLocaleString('ko-KR'); calc(); }); });
+      calc();
+    })();
+  </script>
+</Layout>

@@ -2,8 +2,10 @@
 // 퇴직금 계산기 — 1일 평균임금 × 30 × (재직일수/365).
 import Layout from '../../layouts/Layout.astro';
 import { breadcrumbSchema } from '../../lib/schema';
-import { SOURCE_META } from '../../data/rates';
+import { SOURCE_META, INCOME_TAX_BRACKETS } from '../../data/rates';
 import SourceMeta from '../../components/SourceMeta.astro';
+
+const client = { INCOME_TAX_BRACKETS };
 
 const faqs = [
   { q: '평균임금은 어떻게 정하나요?', a: '퇴직 전 3개월 동안 받은 임금 총액을 그 기간의 총일수로 나눈 것이 1일 평균임금입니다. 이 계산기는 최근 3개월 월평균 급여를 입력받아 1일 평균임금을 추정합니다. 상여·연차수당 등이 있으면 3개월 급여에 반영해 넣으세요.' },
@@ -50,6 +52,23 @@ const jsonLd = [
       </div>
     </section>
 
+    <!-- 퇴직소득세 (세후 실수령) -->
+    <section class="reveal mt-5 overflow-hidden rounded-3xl border border-gray-200 bg-white dark:border-white/10 dark:bg-surface-900">
+      <div class="border-b border-gray-200 bg-gray-50 px-5 py-3 dark:border-white/10 dark:bg-surface-800">
+        <h2 class="text-base font-bold">퇴직소득세 반영 (세후 실수령)</h2>
+      </div>
+      <div class="p-5">
+        <dl class="space-y-2 text-sm">
+          <div class="flex justify-between"><dt class="text-gray-600 dark:text-gray-400">퇴직소득세 (산출세액)</dt><dd class="tnum font-semibold" id="rtax">0</dd></div>
+          <div class="flex justify-between"><dt class="text-gray-600 dark:text-gray-400">지방소득세 (10%)</dt><dd class="tnum font-semibold" id="rlocal">0</dd></div>
+          <div class="mt-1 flex items-baseline justify-between border-t-2 border-gray-900 pt-2 dark:border-white/40"><dt class="font-bold">세후 실수령 퇴직금</dt><dd><span id="rnet" class="tnum text-xl font-extrabold text-accent-700 dark:text-accent-300 sm:text-2xl">0</span> <span class="text-sm font-bold text-gray-500">원</span></dd></div>
+        </dl>
+        <p class="mt-3 text-xs text-gray-500">근속연수공제·환산급여·연분연승 방식(소득세법)으로 계산한 간이 추정. 실제는 근속연수 산정·비과세 등에 따라 달라집니다.</p>
+      </div>
+    </section>
+
+    <SourceMeta meta={SOURCE_META.severance} />
+
     <section class="reveal mt-8">
       <h2 class="mb-3 text-xl font-bold tracking-tight">자주 묻는 질문</h2>
       <div class="space-y-3">
@@ -57,16 +76,40 @@ const jsonLd = [
       </div>
       <p class="mt-4 text-xs text-gray-500">계산식: 1일 평균임금(3개월 급여 ÷ 91.25일) × 30 × (재직일수 ÷ 365). 추정값이며 실제는 평균임금 산정 기준에 따라 달라집니다.</p>
     </section>
-
-    <SourceMeta meta={SOURCE_META.severance} />
   </div>
 
-  <script is:inline>
+  <script is:inline define:vars={{ client }}>
     (function () {
+      var BR = client.INCOME_TAX_BRACKETS;
       var $ = function (id) { return document.getElementById(id); };
       var digits = function (v) { return parseInt(String(v).replace(/[^0-9]/g, ''), 10) || 0; };
       var won = function (n) { return Math.round(n).toLocaleString('ko-KR'); };
       function fmtField(el) { var d = digits(el.value); el.value = d ? d.toLocaleString('ko-KR') : ''; }
+      function progressive(t) { for (var i = 0; i < BR.length; i++) { if (t <= BR[i][0]) return t * BR[i][1] - BR[i][2]; } return 0; }
+      // 근속연수공제(소득세법)
+      function serviceDeduction(y) {
+        if (y <= 5) return 1000000 * y;
+        if (y <= 10) return 5000000 + 2000000 * (y - 5);
+        if (y <= 20) return 15000000 + 2500000 * (y - 10);
+        return 40000000 + 3000000 * (y - 20);
+      }
+      // 환산급여공제(소득세법)
+      function convertedDeduction(c) {
+        if (c <= 8000000) return c;
+        if (c <= 70000000) return 8000000 + (c - 8000000) * 0.6;
+        if (c <= 100000000) return 45200000 + (c - 70000000) * 0.55;
+        if (c <= 300000000) return 61700000 + (c - 100000000) * 0.45;
+        return 151700000 + (c - 300000000) * 0.35;
+      }
+      // 퇴직소득세(근속연수공제·환산급여·연분연승)
+      function retireTax(pay, years) {
+        var y = Math.max(1, years);
+        var afterSvc = Math.max(0, pay - serviceDeduction(y));
+        var converted = (afterSvc / y) * 12;                 // 환산급여
+        var taxBase = Math.max(0, converted - convertedDeduction(converted));
+        var convertedTax = Math.max(0, progressive(taxBase)); // 환산산출세액
+        return convertedTax / 12 * y;                         // 산출세액
+      }
       function calc() {
         var s3 = digits($('salary3').value);
         var totalDays = digits($('yy').value) * 365 + Math.round(digits($('mm').value) * 30.4);
@@ -75,6 +118,13 @@ const jsonLd = [
         $('result').textContent = won(pay);
         $('daily').textContent = won(daily);
         $('days').textContent = totalDays.toLocaleString('ko-KR');
+        // 퇴직소득세
+        var years = Math.max(1, Math.ceil(totalDays / 365));
+        var rtax = pay > 0 ? retireTax(pay, years) : 0;
+        var rlocal = rtax * 0.10;
+        $('rtax').textContent = won(rtax);
+        $('rlocal').textContent = won(rlocal);
+        $('rnet').textContent = won(pay - rtax - rlocal);
       }
       $('salary3').addEventListener('input', function () { fmtField($('salary3')); calc(); });
       ['yy', 'mm'].forEach(function (id) { $(id).addEventListener('input', calc); });

@@ -1,0 +1,90 @@
+---
+// 종합소득세 계산기 — 과세표준 누진세율(6~45%) + 지방소득세 10%. 간이 추정.
+import Layout from '../../layouts/Layout.astro';
+import { INCOME_TAX_BRACKETS, SOURCE_META, RATES_ASOF } from '../../data/rates';
+import { breadcrumbSchema } from '../../lib/schema';
+import SourceMeta from '../../components/SourceMeta.astro';
+
+const client = { INCOME_TAX_BRACKETS };
+
+const faqs = [
+  { q: '종합소득세는 누가 내나요?', a: '사업소득(프리랜서·자영업)·이자·배당·근로·연금·기타소득을 합친 종합소득이 있는 사람이 매년 5월에 신고·납부합니다. 근로소득만 있고 연말정산을 마쳤다면 별도 종소세 신고는 보통 필요 없습니다.' },
+  { q: '이 계산기는 무엇을 계산하나요?', a: '종합소득금액에서 소득공제를 뺀 과세표준에 누진세율(6~45%)을 적용해 산출세액과 지방소득세(산출세액의 10%)를 계산합니다. 필요경비·각종 세액공제·감면은 반영하지 않은 간이 추정입니다.' },
+  { q: '세율 구간은 어떻게 되나요?', a: '과세표준 1,400만 원 이하 6%, ~5,000만 15%, ~8,800만 24%, ~1.5억 35%, ~3억 38%, ~5억 40%, ~10억 42%, 10억 초과 45%의 누진세율입니다. 각 구간마다 누진공제가 적용됩니다.' },
+  { q: '정확한 세금은 어떻게 아나요?', a: '실제 종합소득세는 필요경비, 인적·연금·기부 등 소득공제, 세액공제·감면에 따라 크게 달라집니다. 홈택스 모의계산이나 세무 전문가로 확인하세요.' },
+];
+
+const jsonLd = [
+  breadcrumbSchema([{ name: '홈', url: '/' }, { name: '계산기', url: '/calc/' }, { name: '종합소득세 계산기', url: '/calc/income-tax/' }]),
+  { '@context': 'https://schema.org', '@type': 'WebApplication', name: '종합소득세 계산기', applicationCategory: 'FinanceApplication', operatingSystem: 'All', offers: { '@type': 'Offer', price: '0', priceCurrency: 'KRW' }, url: 'https://money.pointchecknote.com/calc/income-tax/' },
+  { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: faqs.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })) },
+];
+---
+
+<Layout title="종합소득세 계산기 — 과세표준 세율·지방소득세 계산" description="종합소득금액과 소득공제를 넣으면 과세표준, 누진세율(6~45%) 산출세액과 지방소득세(10%)를 계산합니다. 5월 종합소득세 신고 참고용." jsonLd={jsonLd}>
+  <div class="mx-auto max-w-3xl">
+    <nav class="mb-4 text-sm text-gray-500" aria-label="위치"><a href="/" class="hover:text-accent-600">홈</a> › <a href="/calc/" class="hover:text-accent-600">계산기</a> › <span class="text-gray-700 dark:text-gray-300">종합소득세</span></nav>
+    <header class="reveal mb-6">
+      <h1 class="text-3xl font-extrabold tracking-tight sm:text-4xl">종합소득세 계산기</h1>
+      <p class="mt-3 text-gray-600 dark:text-gray-400">종합소득금액과 소득공제를 넣으면 <strong>과세표준·산출세액·지방소득세</strong>를 계산합니다. 5월 신고 전 감 잡기용 간이 추정.</p>
+    </header>
+
+    <section class="reveal mb-5 overflow-hidden rounded-3xl border border-accent-200 bg-gradient-to-br from-accent-50 to-white p-6 shadow-sm dark:border-accent-500/30 dark:from-accent-500/10 dark:to-surface-900">
+      <p class="text-xs font-semibold uppercase tracking-wider text-accent-700 dark:text-accent-300">총 납부 예상 (소득세 + 지방소득세)</p>
+      <p class="mt-1"><span id="total" class="tnum text-4xl font-extrabold sm:text-5xl">0</span> <span class="text-xl font-bold text-gray-500">원</span></p>
+      <div class="mt-3 grid grid-cols-3 gap-3 border-t border-accent-200/60 pt-3 text-sm dark:border-white/10">
+        <div><p class="text-xs text-gray-500">과세표준</p><p class="tnum font-bold"><span id="tb">0</span></p></div>
+        <div><p class="text-xs text-gray-500">산출세액</p><p class="tnum font-bold"><span id="tax">0</span></p></div>
+        <div><p class="text-xs text-gray-500">적용 최고세율</p><p class="font-bold"><span id="rate">0</span>%</p></div>
+      </div>
+    </section>
+
+    <section class="reveal rounded-3xl border border-gray-200 bg-white p-5 dark:border-white/10 dark:bg-surface-900 sm:p-6">
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label for="income" class="mb-1 block text-sm font-semibold">종합소득금액 (원)</label>
+          <input id="income" type="text" inputmode="numeric" autocomplete="off" value="50,000,000" class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-lg tnum dark:border-white/15 dark:bg-surface-800" />
+          <p class="mt-1 text-xs text-gray-500">수입 − 필요경비 후의 소득금액</p>
+        </div>
+        <div>
+          <label for="deduction" class="mb-1 block text-sm font-semibold">소득공제 합계 (원)</label>
+          <input id="deduction" type="text" inputmode="numeric" autocomplete="off" value="1,500,000" class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-lg tnum dark:border-white/15 dark:bg-surface-800" />
+          <p class="mt-1 text-xs text-gray-500">본인 기본공제 150만 등</p>
+        </div>
+      </div>
+    </section>
+
+    <SourceMeta meta={SOURCE_META.income} asof={RATES_ASOF} />
+
+    <section class="reveal mt-8">
+      <h2 class="mb-3 text-xl font-bold tracking-tight">자주 묻는 질문</h2>
+      <div class="space-y-3">{faqs.map((f) => (<details class="rounded-xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-surface-900"><summary class="cursor-pointer font-semibold">{f.q}</summary><p class="mt-2 text-sm text-gray-600 dark:text-gray-400">{f.a}</p></details>))}</div>
+    </section>
+  </div>
+
+  <script is:inline define:vars={{ client }}>
+    (function () {
+      var BR = client.INCOME_TAX_BRACKETS;
+      var $ = function (id) { return document.getElementById(id); };
+      var digits = function (v) { return parseInt(String(v).replace(/[^0-9]/g, ''), 10) || 0; };
+      var won = function (n) { return Math.round(n).toLocaleString('ko-KR'); };
+      function fmtField(el) { var d = digits(el.value); el.value = d ? d.toLocaleString('ko-KR') : ''; }
+      function progressive(t) { for (var i = 0; i < BR.length; i++) { if (t <= BR[i][0]) return { tax: t * BR[i][1] - BR[i][2], rate: BR[i][1] }; } return { tax: 0, rate: 0 }; }
+      function calc() {
+        var income = digits($('income').value);
+        var ded = digits($('deduction').value);
+        var tb = Math.max(0, income - ded);
+        var r = progressive(tb);
+        var tax = Math.max(0, r.tax);
+        var local = tax * 0.10;
+        $('tb').textContent = won(tb);
+        $('tax').textContent = won(tax);
+        $('rate').textContent = Math.round(r.rate * 100);
+        $('total').textContent = won(tax + local);
+      }
+      $('income').addEventListener('input', function () { fmtField($('income')); calc(); });
+      $('deduction').addEventListener('input', function () { fmtField($('deduction')); calc(); });
+      calc();
+    })();
+  </script>
+</Layout>

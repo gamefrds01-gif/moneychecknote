@@ -1,0 +1,113 @@
+---
+// 시급·주휴수당 계산기 — 근로기준법 제55조·시행령 제30조. 주 15시간 이상·개근 시 주휴수당.
+import Layout from '../../layouts/Layout.astro';
+import { HOURLY, SOURCE_META } from '../../data/rates';
+import { breadcrumbSchema } from '../../lib/schema';
+import SourceMeta from '../../components/SourceMeta.astro';
+
+const client = { HOURLY };
+
+const faqs = [
+  { q: '주휴수당은 누가 받나요? (법적 요건)', a: '근로기준법 제55조와 시행령 제30조에 따라 ① 1주 소정근로시간이 15시간 이상이고 ② 그 주의 소정근로일을 개근한 근로자에게 유급휴일 1일(주휴)이 부여됩니다. 정규직·아르바이트·계약직 구분 없이 이 요건만 충족하면 지급 대상입니다.' },
+  { q: '하루 8시간만, 주 1일만 나가도 주휴수당을 받나요?', a: '아니요. 그 경우 1주 소정근로시간이 8시간뿐이라 15시간 미만이므로 주휴수당이 발생하지 않습니다. 주휴수당의 핵심 기준선은 "1주 15시간 이상"입니다. 예를 들어 하루 8시간·주 2일(주 16시간)이면 15시간을 넘어 주휴수당 대상이 됩니다.' },
+  { q: '주휴수당은 얼마인가요?', a: '주 40시간(이상) 근무자는 8시간분(시급 × 8)입니다. 단시간 근로자는 "1주 소정근로시간 ÷ 40 × 8 × 시급"으로 비례 계산합니다. 예: 주 20시간 근무면 20÷40×8=4시간분의 시급이 주휴수당입니다.' },
+  { q: '월급으로 환산하면요?', a: '주급(주휴 포함)에 월평균 주수(약 4.345주)를 곱합니다. 주 40시간 풀타임은 월 209시간(주 40시간 + 주휴 8시간을 월로 환산)이 기준이라, 시급 × 209가 월 기본급이 됩니다.' },
+  { q: '개근을 못 하면요?', a: '지각·조퇴는 결근이 아니므로 개근으로 봅니다. 다만 그 주에 결근이 있으면 해당 주의 주휴수당은 발생하지 않습니다. 연차·약정휴가 사용은 개근으로 처리됩니다.' },
+];
+
+const jsonLd = [
+  breadcrumbSchema([{ name: '홈', url: '/' }, { name: '계산기', url: '/calc/' }, { name: '시급·주휴수당 계산기', url: '/calc/hourly/' }]),
+  { '@context': 'https://schema.org', '@type': 'WebApplication', name: '시급·주휴수당 계산기 2026', applicationCategory: 'FinanceApplication', operatingSystem: 'All', offers: { '@type': 'Offer', price: '0', priceCurrency: 'KRW' }, url: 'https://money.pointchecknote.com/calc/hourly/' },
+  { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: faqs.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })) },
+];
+---
+
+<Layout title="시급·주휴수당 계산기 2026 — 주휴수당 조건·주급·월급 환산" description="시급과 근무시간을 넣으면 주휴수당(근로기준법 제55조, 주 15시간 이상·개근)과 주급·월급 환산액을 계산합니다. 2026 최저임금 10,320원 비교." jsonLd={jsonLd}>
+  <div class="mx-auto max-w-3xl">
+    <nav class="mb-4 text-sm text-gray-500" aria-label="위치"><a href="/" class="hover:text-accent-600">홈</a> › <a href="/calc/" class="hover:text-accent-600">계산기</a> › <span class="text-gray-700 dark:text-gray-300">시급·주휴수당</span></nav>
+    <header class="reveal mb-6">
+      <h1 class="text-3xl font-extrabold tracking-tight sm:text-4xl">시급·주휴수당 계산기</h1>
+      <p class="mt-3 text-gray-600 dark:text-gray-400">시급과 근무시간을 넣으면 <strong>주휴수당·주급·월급 환산</strong>을 계산합니다. 주휴수당은 <strong>근로기준법 제55조</strong>(주 15시간 이상·개근) 기준이에요.</p>
+    </header>
+
+    <section class="reveal mb-5 overflow-hidden rounded-3xl border border-accent-200 bg-gradient-to-br from-accent-50 to-white p-6 shadow-sm dark:border-accent-500/30 dark:from-accent-500/10 dark:to-surface-900">
+      <p class="text-xs font-semibold uppercase tracking-wider text-accent-700 dark:text-accent-300">주급 (주휴수당 포함)</p>
+      <p class="mt-1"><span id="weekly" class="tnum text-4xl font-extrabold sm:text-5xl">0</span> <span class="text-xl font-bold text-gray-500">원</span></p>
+      <div class="mt-3 grid grid-cols-2 gap-3 border-t border-accent-200/60 pt-3 text-sm dark:border-white/10 sm:grid-cols-4">
+        <div><p class="text-xs text-gray-500">주 소정근로</p><p class="tnum font-bold"><span id="wkhours">0</span><span class="text-xs font-normal text-gray-500"> 시간</span></p></div>
+        <div><p class="text-xs text-gray-500">주휴수당</p><p class="tnum font-bold"><span id="holiday">0</span><span class="text-xs font-normal text-gray-500"> 원</span></p></div>
+        <div><p class="text-xs text-gray-500">월 환산(약 4.345주)</p><p class="tnum font-bold"><span id="monthly">0</span><span class="text-xs font-normal text-gray-500"> 원</span></p></div>
+        <div><p class="text-xs text-gray-500">주휴수당 발생</p><p class="font-bold"><span id="eligible">-</span></p></div>
+      </div>
+    </section>
+
+    <section class="reveal rounded-3xl border border-gray-200 bg-white p-5 dark:border-white/10 dark:bg-surface-900 sm:p-6">
+      <div class="mb-4">
+        <label for="wage" class="mb-1 block text-sm font-semibold">시급 (원)</label>
+        <div class="mb-2 flex flex-wrap gap-2">
+          <button type="button" class="wpreset rounded-full border border-gray-300 px-3 py-1 text-sm font-semibold hover:border-accent-500 hover:text-accent-600 dark:border-white/15" data-v="10320">2026 최저 10,320</button>
+          <button type="button" class="wpreset rounded-full border border-gray-300 px-3 py-1 text-sm font-semibold hover:border-accent-500 hover:text-accent-600 dark:border-white/15" data-v="12000">12,000</button>
+          <button type="button" class="wpreset rounded-full border border-gray-300 px-3 py-1 text-sm font-semibold hover:border-accent-500 hover:text-accent-600 dark:border-white/15" data-v="15000">15,000</button>
+        </div>
+        <input id="wage" type="text" inputmode="numeric" autocomplete="off" value="10,320" class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-lg tnum dark:border-white/15 dark:bg-surface-800" />
+        <p id="minwage-note" class="mt-1 text-xs text-gray-500"></p>
+      </div>
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label for="hpd" class="mb-1 block text-sm font-semibold">1일 근무시간</label>
+          <input id="hpd" type="text" inputmode="decimal" autocomplete="off" value="8" class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 tnum dark:border-white/15 dark:bg-surface-800" />
+        </div>
+        <div>
+          <label for="dpw" class="mb-1 block text-sm font-semibold">주 근무일수</label>
+          <input id="dpw" type="text" inputmode="numeric" autocomplete="off" value="5" class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 tnum dark:border-white/15 dark:bg-surface-800" />
+        </div>
+      </div>
+      <p class="mt-3 text-xs text-gray-500">주휴는 주 40시간까지만 산정(초과분 제외). 주 15시간 미만이면 주휴수당이 발생하지 않습니다.</p>
+    </section>
+
+    <SourceMeta meta={SOURCE_META.hourly} asof={HOURLY.asof} />
+
+    <section class="reveal mt-8">
+      <h2 class="mb-3 text-xl font-bold tracking-tight">자주 묻는 질문</h2>
+      <div class="space-y-3">{faqs.map((f) => (<details class="rounded-xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-surface-900"><summary class="cursor-pointer font-semibold">{f.q}</summary><p class="mt-2 text-sm text-gray-600 dark:text-gray-400">{f.a}</p></details>))}</div>
+    </section>
+  </div>
+
+  <script is:inline define:vars={{ client }}>
+    (function () {
+      var H = client.HOURLY;
+      var $ = function (id) { return document.getElementById(id); };
+      var digits = function (v) { return parseInt(String(v).replace(/[^0-9]/g, ''), 10) || 0; };
+      var fnum = function (v) { return parseFloat(String(v).replace(/[^0-9.]/g, '')) || 0; };
+      var won = function (n) { return Math.round(n).toLocaleString('ko-KR'); };
+      function fmtField(el) { var d = digits(el.value); el.value = d ? d.toLocaleString('ko-KR') : ''; }
+      function calc() {
+        var wage = digits($('wage').value);
+        var hpd = fnum($('hpd').value);
+        var dpw = fnum($('dpw').value);
+        var wkhours = hpd * dpw;                       // 주 소정근로시간
+        var payHours = Math.min(wkhours, H.fullWeekHours);
+        var eligible = wkhours >= H.weeklyHolidayThreshold;
+        var holiday = eligible ? (payHours / H.fullWeekHours) * H.holidayHours * wage : 0;
+        var weekly = wkhours * wage + holiday;         // 주급(주휴 포함)
+        var monthly = weekly * (365 / 7 / 12);         // 월 환산
+
+        $('wkhours').textContent = (Math.round(wkhours * 10) / 10);
+        $('holiday').textContent = won(holiday);
+        $('weekly').textContent = won(weekly);
+        $('monthly').textContent = won(monthly);
+        var el = $('eligible');
+        el.textContent = eligible ? 'O (주 15h↑)' : 'X (15h 미만)';
+        el.className = eligible ? 'font-bold text-accent-700 dark:text-accent-300' : 'font-bold text-rose-600 dark:text-rose-400';
+
+        var note = $('minwage-note');
+        if (wage > 0 && wage < H.minWageHour) { note.textContent = '⚠ 2026 최저임금(' + H.minWageHour.toLocaleString('ko-KR') + '원) 미만입니다.'; note.className = 'mt-1 text-xs font-semibold text-rose-600 dark:text-rose-400'; }
+        else { note.textContent = '2026 최저임금 시급 ' + H.minWageHour.toLocaleString('ko-KR') + '원 기준.'; note.className = 'mt-1 text-xs text-gray-500'; }
+      }
+      $('wage').addEventListener('input', function () { fmtField($('wage')); calc(); });
+      ['hpd', 'dpw'].forEach(function (id) { $(id).addEventListener('input', calc); });
+      Array.prototype.forEach.call(document.querySelectorAll('.wpreset'), function (b) { b.addEventListener('click', function () { $('wage').value = digits(b.getAttribute('data-v')).toLocaleString('ko-KR'); calc(); }); });
+      calc();
+    })();
+  </script>
+</Layout>
