@@ -100,6 +100,35 @@ export const ELEC = {
   asof: '2026-09-06',
 };
 
+// 휴대폰 요금 — 단말기 할부(5.9%)+선택약정 25% vs 공시지원금+전환지원금. 단통법 폐지(2025.7.22)로 추가지원금 상한 없음.
+export const PHONE = {
+  installmentAPR: 0.059,      // 단말기 할부수수료 연 5.9%(통상)
+  selectiveDiscount: 0.25,    // 선택약정 요금할인 25%
+  switchSubsidyMax: 500000,   // 전환지원금(번호이동) 최대, 공시지원금 선택 시
+  months: [24, 30, 36],
+  vatRate: 0.10,
+  // 대표 요금제(월정액, 부가세 포함 광고가 기준) — 수시 개편되니 확인일 기준 예시. 화면에서 직접 편집 가능.
+  plans: {
+    'SKT': [
+      { name: 'T플랜 세이브', fee: 33000 },
+      { name: 'Light(중저가)', fee: 59000 },
+      { name: 'Best(무제한)', fee: 89000 },
+    ],
+    'KT': [
+      { name: '요고(온라인)', fee: 30000 },
+      { name: '5G 슬림·베이직', fee: 61000 },
+      { name: '5G 초이스(무제한)', fee: 90000 },
+    ],
+    'LGU+': [
+      { name: '너겟(온라인)', fee: 30000 },
+      { name: '5G 스탠다드', fee: 63000 },
+      { name: '프리미어 에센셜(무제한)', fee: 85000 },
+    ],
+  } as Record<string, { name: string; fee: number }[]>,
+  asof: '2026-09-06',
+  note: '단통법(단말기유통법)은 2025.7.22 폐지되어 추가지원금 상한(구 15%)이 없어졌습니다(판매처 자유). 선택약정 요금할인 25%는 유지됩니다.',
+};
+
 // 각 계산기의 근거·출처(공식 발행처 + 적용연도). 계산기 페이지에 그대로 노출.
 export const SOURCE_META: Record<string, { label: string; items: { name: string; org: string; url: string }[]; authority?: string }> = {
   salary: {
@@ -165,5 +194,14 @@ export const SOURCE_META: Record<string, { label: string; items: { name: string;
       { name: '부가가치세 10%(일반과세)·간이과세 별도', org: '국세청(부가가치세법)', url: 'https://www.nts.go.kr' },
     ],
     authority: '종합소득세는 필요경비·소득공제·세액공제에 따라 크게 달라지는 간이 추정입니다. 정확한 신고는 홈택스·세무 전문가로 확인하세요.',
+  },
+  phone: {
+    label: '휴대폰 요금·단말기 지원금 (2026년 기준)',
+    items: [
+      { name: '선택약정 요금할인 25%·전환지원금(번호이동)', org: '전기통신사업법·과학기술정보통신부', url: 'https://www.msit.go.kr' },
+      { name: '단말기 지원금·요금제 공식 비교', org: '스마트초이스(한국통신사업자연합회)', url: 'https://www.smartchoice.or.kr' },
+      { name: '단통법 폐지(2025.7.22)로 추가지원금 상한 없음', org: '과학기술정보통신부', url: 'https://www.msit.go.kr' },
+    ],
+    authority: '요금제·출고가·공시지원금은 통신사·기기·시점마다 크게 다릅니다(대표 요금제는 예시). 정확한 지원금·요금제는 스마트초이스와 통신사 공식에서 확인하세요.',
   },
 };

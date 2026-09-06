@@ -1,0 +1,243 @@
+---
+// 휴대폰 요금 계산기 — 단말기 할부(5.9%) + 선택약정 25% vs 공시지원금+전환지원금 자동 비교 + 결합·부가서비스·부가세.
+import Layout from '../../layouts/Layout.astro';
+import { PHONE, SOURCE_META } from '../../data/rates';
+import { breadcrumbSchema } from '../../lib/schema';
+import SourceMeta from '../../components/SourceMeta.astro';
+
+const client = { PHONE };
+
+const faqs = [
+  { q: '선택약정 25%와 공시지원금, 뭐가 유리한가요?', a: '선택약정은 단말기 할인 대신 매달 통신요금의 25%를 깎아주고, 공시지원금은 요금 할인 대신 단말기 값을 깎아줍니다. 보통 고가 요금제를 오래 쓰면 선택약정(25% × 24개월)이, 공시지원금이 큰 인기 기종이거나 번호이동 전환지원금까지 받으면 공시지원금이 유리합니다. 이 계산기는 같은 조건으로 두 방식의 24개월 총액을 비교해 유리한 쪽을 알려줍니다.' },
+  { q: '단통법이 폐지됐다는데 뭐가 달라졌나요?', a: '2025년 7월 22일 단말기유통법이 폐지되어, 예전의 추가지원금 상한(공시지원금의 15%)이 사라졌습니다. 이제 판매처마다 추가지원금을 자유롭게 줄 수 있어 같은 폰도 매장별 가격차가 큽니다. 아래 "추가지원금" 칸에 실제 매장에서 제시한 금액을 넣으면 됩니다.' },
+  { q: '할부수수료(이자)는 왜 붙나요?', a: '단말기 값을 할부로 나눠 내면 통신사가 연 5.9% 수준의 할부수수료를 부과합니다. 24·30·36개월로 나눌수록 매달 부담은 줄지만 총 이자는 늘어납니다. 할부원금이 0원(지원금으로 전액 충당)이면 이자도 없습니다.' },
+  { q: '표시 금액에 부가세가 포함되나요?', a: '이 계산기는 요금제·부가서비스를 부가세 포함 광고가 기준으로 보고, 월 납부액도 부가세 포함으로 표시합니다. 실제 청구서는 통신사에 따라 부가세 별도 표기가 있을 수 있으니 최종 금액은 청구서로 확인하세요.' },
+  { q: '요금제 가격이 실제와 다른데요?', a: '통신 3사는 요금제를 수시로 개편합니다(예: 2026년 7월 SKT 개편). 프리셋은 대표 예시이며, 실제 요금제 월정액을 직접 입력하면 정확히 계산됩니다. 정확한 지원금·요금제는 스마트초이스(smartchoice.or.kr)에서 확인하세요.' },
+];
+
+const jsonLd = [
+  breadcrumbSchema([{ name: '홈', url: '/' }, { name: '계산기', url: '/calc/' }, { name: '휴대폰 요금 계산기', url: '/calc/phone/' }]),
+  { '@context': 'https://schema.org', '@type': 'WebApplication', name: '휴대폰 요금 계산기', applicationCategory: 'FinanceApplication', operatingSystem: 'All', offers: { '@type': 'Offer', price: '0', priceCurrency: 'KRW' }, url: 'https://money.pointchecknote.com/calc/phone/' },
+  { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: faqs.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })) },
+];
+---
+
+<Layout title="휴대폰 요금 계산기 — 단말기 할부·선택약정·공시지원금 월 납부액" description="단말기 출고가·요금제·지원금을 넣으면 월 휴대폰 요금(단말기 할부 5.9%+통신요금+부가서비스+부가세)을 계산하고, 선택약정 25%와 공시지원금 중 유리한 쪽을 비교합니다." jsonLd={jsonLd}>
+  <div class="mx-auto max-w-3xl">
+    <nav class="mb-4 text-sm text-gray-500" aria-label="위치"><a href="/" class="hover:text-accent-600">홈</a> › <a href="/calc/" class="hover:text-accent-600">계산기</a> › <span class="text-gray-700 dark:text-gray-300">휴대폰 요금</span></nav>
+    <header class="reveal mb-6">
+      <h1 class="text-3xl font-extrabold tracking-tight sm:text-4xl">휴대폰 요금 계산기</h1>
+      <p class="mt-3 text-gray-600 dark:text-gray-400">단말기 출고가·요금제·지원금을 넣으면 <strong>월 납부액(부가세 포함)</strong>을 계산하고, <strong>선택약정 25% vs 공시지원금</strong> 중 유리한 쪽을 비교합니다.</p>
+    </header>
+
+    <!-- 월 납부액 -->
+    <section class="reveal mb-5 overflow-hidden rounded-3xl border border-accent-200 bg-gradient-to-br from-accent-50 to-white p-6 shadow-sm dark:border-accent-500/30 dark:from-accent-500/10 dark:to-surface-900">
+      <p class="text-xs font-semibold uppercase tracking-wider text-accent-700 dark:text-accent-300">월 납부액 (부가세 포함) · <span id="method-label">선택약정</span></p>
+      <p class="mt-1"><span id="monthly" class="tnum text-4xl font-extrabold sm:text-5xl">0</span> <span class="text-xl font-bold text-gray-500">원</span></p>
+      <p class="mt-1 text-sm text-gray-600 dark:text-gray-400"><span id="months-note">24</span>개월 총 <span id="totalcost" class="tnum font-semibold">0</span> 원</p>
+    </section>
+
+    <!-- 선택약정 vs 공시지원금 비교 -->
+    <section class="reveal mb-5 grid gap-3 sm:grid-cols-2">
+      <button type="button" id="card-sel" data-m="sel" class="methodcard rounded-3xl border p-5 text-left">
+        <p class="text-xs font-semibold uppercase tracking-wider text-accent-700 dark:text-accent-300">선택약정 (요금 25%↓)</p>
+        <p class="mt-1"><span id="sel-monthly" class="tnum text-2xl font-extrabold">0</span> <span class="text-sm font-bold text-gray-500">원/월</span></p>
+        <p class="mt-0.5 text-xs text-gray-500">24개월 총 <span id="sel-total" class="tnum">0</span> 원</p>
+      </button>
+      <button type="button" id="card-pub" data-m="pub" class="methodcard rounded-3xl border p-5 text-left">
+        <p class="text-xs font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">공시지원금 (단말기↓)</p>
+        <p class="mt-1"><span id="pub-monthly" class="tnum text-2xl font-extrabold">0</span> <span class="text-sm font-bold text-gray-500">원/월</span></p>
+        <p class="mt-0.5 text-xs text-gray-500">24개월 총 <span id="pub-total" class="tnum">0</span> 원</p>
+      </button>
+      <p id="verdict" class="sm:col-span-2 rounded-xl bg-gray-900 px-4 py-2.5 text-center text-sm font-semibold text-white dark:bg-white dark:text-gray-900">-</p>
+    </section>
+
+    <!-- 상세 -->
+    <section class="reveal mb-5 rounded-3xl border border-gray-200 bg-white p-5 dark:border-white/10 dark:bg-surface-900">
+      <p class="mb-3 text-sm font-bold">월 요금 상세 (<span id="d-method">선택약정</span>)</p>
+      <dl class="space-y-2 text-sm">
+        <div class="flex justify-between"><dt class="text-gray-600 dark:text-gray-400">단말기 할부원금</dt><dd class="tnum font-semibold" id="d-principal">0</dd></div>
+        <div class="flex justify-between"><dt class="text-gray-600 dark:text-gray-400">월 단말기 할부금 <span class="text-xs text-gray-400">(수수료 5.9%)</span></dt><dd class="tnum font-semibold" id="d-device">0</dd></div>
+        <div class="flex justify-between"><dt class="text-gray-600 dark:text-gray-400">월 통신요금 <span id="d-disc" class="text-xs text-accent-600 dark:text-accent-400"></span></dt><dd class="tnum font-semibold" id="d-plan">0</dd></div>
+        <div class="flex justify-between"><dt class="text-gray-600 dark:text-gray-400">부가서비스</dt><dd class="tnum font-semibold" id="d-extra">0</dd></div>
+        <div class="flex justify-between"><dt class="text-gray-600 dark:text-gray-400">결합·기타 할인</dt><dd class="tnum font-semibold text-rose-600 dark:text-rose-400" id="d-bundle">0</dd></div>
+        <div class="mt-1 flex items-baseline justify-between border-t-2 border-gray-900 pt-2 dark:border-white/40"><dt class="font-bold">월 납부액 (부가세 포함)</dt><dd><span id="d-total" class="tnum text-xl font-extrabold text-accent-700 dark:text-accent-300">0</span> <span class="text-sm font-bold text-gray-500">원</span></dd></div>
+      </dl>
+    </section>
+
+    <!-- 입력 -->
+    <section class="reveal rounded-3xl border border-gray-200 bg-white p-5 dark:border-white/10 dark:bg-surface-900 sm:p-6">
+      <!-- 통신사 -->
+      <p class="mb-1 block text-sm font-semibold">통신사</p>
+      <div id="carriers" class="mb-4 grid grid-cols-3 gap-2">
+        <button type="button" data-c="SKT" class="carrier rounded-xl border px-2 py-2 text-sm font-semibold">SKT</button>
+        <button type="button" data-c="KT" class="carrier rounded-xl border px-2 py-2 text-sm font-semibold">KT</button>
+        <button type="button" data-c="LGU+" class="carrier rounded-xl border px-2 py-2 text-sm font-semibold">LG U+</button>
+      </div>
+
+      <!-- 요금제 -->
+      <label for="plan" class="mb-1 block text-sm font-semibold">월정액 요금제 (원)</label>
+      <div id="plan-chips" class="mb-2 flex flex-wrap gap-2"></div>
+      <input id="plan" type="text" inputmode="numeric" autocomplete="off" value="89,000" class="mb-4 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-lg tnum dark:border-white/15 dark:bg-surface-800" />
+
+      <!-- 할인방식 -->
+      <p class="mb-1 block text-sm font-semibold">할인 방식</p>
+      <div id="methods" class="mb-4 grid grid-cols-2 gap-2">
+        <button type="button" data-m="sel" class="mbtn rounded-xl border px-2 py-2 text-sm font-semibold">선택약정 (요금 25%↓)</button>
+        <button type="button" data-m="pub" class="mbtn rounded-xl border px-2 py-2 text-sm font-semibold">공시지원금 (단말기↓)</button>
+      </div>
+
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div class="sm:col-span-2">
+          <label for="price" class="mb-1 block text-sm font-semibold">단말기 출고가 (원)</label>
+          <input id="price" type="text" inputmode="numeric" autocomplete="off" value="1,155,000" class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-lg tnum dark:border-white/15 dark:bg-surface-800" />
+        </div>
+        <div id="wrap-subsidy" class="hidden">
+          <label for="subsidy" class="mb-1 block text-sm font-semibold">공시지원금 (원)</label>
+          <input id="subsidy" type="text" inputmode="numeric" autocomplete="off" value="300,000" class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 tnum dark:border-white/15 dark:bg-surface-800" />
+        </div>
+        <div id="wrap-extra" class="hidden">
+          <label for="extraSub" class="mb-1 block text-sm font-semibold">추가지원금 (원) <span class="text-xs text-gray-400">매장</span></label>
+          <input id="extraSub" type="text" inputmode="numeric" autocomplete="off" value="45,000" class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 tnum dark:border-white/15 dark:bg-surface-800" />
+        </div>
+        <div id="wrap-switch" class="hidden sm:col-span-2">
+          <label for="switchSub" class="mb-1 block text-sm font-semibold">전환지원금 (원) <span class="text-xs text-gray-400">번호이동 시, 최대 50만</span></label>
+          <input id="switchSub" type="text" inputmode="numeric" autocomplete="off" value="0" class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 tnum dark:border-white/15 dark:bg-surface-800" />
+        </div>
+        <div>
+          <label for="months" class="mb-1 block text-sm font-semibold">할부 개월</label>
+          <select id="months" class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 tnum dark:border-white/15 dark:bg-surface-800">
+            <option value="24">24개월</option>
+            <option value="30">30개월</option>
+            <option value="36">36개월</option>
+          </select>
+        </div>
+        <div>
+          <label for="apr" class="mb-1 block text-sm font-semibold">할부수수료율 (연 %)</label>
+          <input id="apr" type="text" inputmode="decimal" autocomplete="off" value="5.9" class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 tnum dark:border-white/15 dark:bg-surface-800" />
+        </div>
+        <div>
+          <label for="bundle" class="mb-1 block text-sm font-semibold">결합·기타 할인 (월, 원)</label>
+          <input id="bundle" type="text" inputmode="numeric" autocomplete="off" value="0" class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 tnum dark:border-white/15 dark:bg-surface-800" />
+        </div>
+        <div>
+          <label for="addon" class="mb-1 block text-sm font-semibold">부가서비스 (월, 원)</label>
+          <input id="addon" type="text" inputmode="numeric" autocomplete="off" value="0" class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 tnum dark:border-white/15 dark:bg-surface-800" />
+        </div>
+      </div>
+      <p class="mt-3 text-xs text-gray-500">{PHONE.note}</p>
+    </section>
+
+    <SourceMeta meta={SOURCE_META.phone} asof={PHONE.asof} />
+
+    <section class="reveal mt-8">
+      <h2 class="mb-3 text-xl font-bold tracking-tight">자주 묻는 질문</h2>
+      <div class="space-y-3">{faqs.map((f) => (<details class="rounded-xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-surface-900"><summary class="cursor-pointer font-semibold">{f.q}</summary><p class="mt-2 text-sm text-gray-600 dark:text-gray-400">{f.a}</p></details>))}</div>
+    </section>
+  </div>
+
+  <script is:inline define:vars={{ client }}>
+    (function () {
+      var P = client.PHONE;
+      var $ = function (id) { return document.getElementById(id); };
+      var digits = function (v) { return parseInt(String(v).replace(/[^0-9]/g, ''), 10) || 0; };
+      var fnum = function (v) { return parseFloat(String(v).replace(/[^0-9.]/g, '')) || 0; };
+      var won = function (n) { return Math.round(n).toLocaleString('ko-KR'); };
+      function fmtField(el) { var d = digits(el.value); el.value = d ? d.toLocaleString('ko-KR') : ''; }
+
+      var carrier = 'SKT', method = 'sel';
+
+      // 단말기 월 할부금(원리금균등)·총액
+      function device(principal, apr, n) {
+        if (principal <= 0) return { monthly: 0, total: 0 };
+        var r = apr / 100 / 12;
+        var m = r === 0 ? principal / n : principal * r / (1 - Math.pow(1 + r, -n));
+        return { monthly: m, total: m * n };
+      }
+      // 한 방식의 월납/총액
+      function costOf(m, inp) {
+        var principal = m === 'sel' ? inp.price : Math.max(0, inp.price - inp.subsidy - inp.extra - inp.sw);
+        var dev = device(principal, inp.apr, inp.n);
+        var plan = m === 'sel' ? inp.plan * (1 - P.selectiveDiscount) : inp.plan;
+        var monthlyComm = plan + inp.addon - inp.bundle;
+        var monthly = dev.monthly + monthlyComm;
+        var total = dev.total + monthlyComm * inp.n;
+        return { principal: principal, deviceMonthly: dev.monthly, plan: plan, monthly: monthly, total: total };
+      }
+      function readInputs() {
+        return {
+          price: digits($('price').value), subsidy: digits($('subsidy').value), extra: digits($('extraSub').value),
+          sw: Math.min(digits($('switchSub').value), P.switchSubsidyMax), plan: digits($('plan').value),
+          addon: digits($('addon').value), bundle: digits($('bundle').value),
+          apr: fnum($('apr').value), n: parseInt($('months').value) || 24,
+        };
+      }
+      function renderChips() {
+        var box = $('plan-chips'); box.innerHTML = '';
+        (P.plans[carrier] || []).forEach(function (pl) {
+          var b = document.createElement('button'); b.type = 'button';
+          b.className = 'rounded-full border border-gray-300 px-3 py-1 text-sm font-semibold hover:border-accent-500 hover:text-accent-600 dark:border-white/15';
+          b.textContent = pl.name + ' ' + pl.fee.toLocaleString('ko-KR');
+          b.addEventListener('click', function () { $('plan').value = pl.fee.toLocaleString('ko-KR'); calc(); });
+          box.appendChild(b);
+        });
+      }
+      function calc() {
+        var inp = readInputs();
+        var sel = costOf('sel', inp), pub = costOf('pub', inp);
+        $('sel-monthly').textContent = won(sel.monthly); $('sel-total').textContent = won(sel.total);
+        $('pub-monthly').textContent = won(pub.monthly); $('pub-total').textContent = won(pub.total);
+
+        var cur = method === 'sel' ? sel : pub;
+        $('monthly').textContent = won(cur.monthly);
+        $('totalcost').textContent = won(cur.total);
+        $('months-note').textContent = inp.n;
+        $('method-label').textContent = method === 'sel' ? '선택약정' : '공시지원금';
+        $('d-method').textContent = method === 'sel' ? '선택약정' : '공시지원금';
+        $('d-principal').textContent = won(cur.principal);
+        $('d-device').textContent = won(cur.deviceMonthly);
+        $('d-plan').textContent = won(cur.plan);
+        $('d-disc').textContent = method === 'sel' ? '(25% 할인)' : '(할인 없음)';
+        $('d-extra').textContent = won(inp.addon);
+        $('d-bundle').textContent = '-' + won(inp.bundle);
+        $('d-total').textContent = won(cur.monthly);
+
+        // 유리 비교
+        var diff = Math.abs(sel.total - pub.total);
+        var v = $('verdict');
+        if (diff < 1000) { v.textContent = '두 방식 차이 거의 없음'; }
+        else if (sel.total < pub.total) { v.textContent = '✔ 선택약정이 ' + won(diff) + '원 더 저렴 (' + inp.n + '개월 총액 기준)'; }
+        else { v.textContent = '✔ 공시지원금이 ' + won(diff) + '원 더 저렴 (' + inp.n + '개월 총액 기준)'; }
+
+        // 카드/버튼 활성
+        [['card-sel', 'sel'], ['card-pub', 'pub']].forEach(function (x) {
+          var el = $(x[0]); var on = x[1] === method; var win = (x[1] === 'sel' ? sel.total <= pub.total : pub.total < sel.total);
+          el.className = 'methodcard rounded-3xl border p-5 text-left ' + (on ? 'border-accent-500 bg-accent-50 dark:bg-accent-500/10' : 'border-gray-200 dark:border-white/10 bg-white dark:bg-surface-900') + (win ? ' ring-1 ring-emerald-400' : '');
+        });
+        Array.prototype.forEach.call(document.querySelectorAll('.mbtn'), function (b) {
+          var on = b.getAttribute('data-m') === method;
+          b.className = 'mbtn rounded-xl border px-2 py-2 text-sm font-semibold ' + (on ? 'border-accent-500 bg-accent-50 text-accent-700 dark:bg-accent-500/15 dark:text-accent-300' : 'border-gray-300 dark:border-white/15');
+        });
+        Array.prototype.forEach.call(document.querySelectorAll('.carrier'), function (b) {
+          var on = b.getAttribute('data-c') === carrier;
+          b.className = 'carrier rounded-xl border px-2 py-2 text-sm font-semibold ' + (on ? 'border-accent-500 bg-accent-50 text-accent-700 dark:bg-accent-500/15 dark:text-accent-300' : 'border-gray-300 dark:border-white/15');
+        });
+        // 공시지원금 입력칸 표시
+        var pub_ = method === 'pub';
+        $('wrap-subsidy').className = pub_ ? '' : 'hidden';
+        $('wrap-extra').className = pub_ ? '' : 'hidden';
+        $('wrap-switch').className = pub_ ? 'sm:col-span-2' : 'hidden';
+      }
+      ['price', 'subsidy', 'extraSub', 'switchSub', 'plan', 'addon', 'bundle'].forEach(function (id) {
+        $(id).addEventListener('input', function () { fmtField($(id)); calc(); });
+      });
+      $('apr').addEventListener('input', calc);
+      $('months').addEventListener('change', calc);
+      Array.prototype.forEach.call(document.querySelectorAll('.carrier'), function (b) { b.addEventListener('click', function () { carrier = b.getAttribute('data-c'); renderChips(); calc(); }); });
+      Array.prototype.forEach.call(document.querySelectorAll('.mbtn'), function (b) { b.addEventListener('click', function () { method = b.getAttribute('data-m'); calc(); }); });
+      $('card-sel').addEventListener('click', function () { method = 'sel'; calc(); });
+      $('card-pub').addEventListener('click', function () { method = 'pub'; calc(); });
+      renderChips(); calc();
+    })();
+  </script>
+</Layout>
